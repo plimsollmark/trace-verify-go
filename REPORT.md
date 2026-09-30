@@ -48,6 +48,18 @@ wants. This is offered toward both, and the findings are offered whatever become
   parser is where leniency turns a forged record into a pass: it refuses duplicate
   names, lone surrogates and invalid UTF-8, which Go's `encoding/json` accepts or
   silently repairs.
+- **Security testing, and its limits.** A review looked for forged passes, parser
+  leniency, unusable or weak keys, signature and integer malleability, crashes on hostile
+  input, and a skip or an unverified rounded to a pass; every fix carries a test that
+  reproduces the problem. Three fuzz targets (the JSON parser, the key reader, and
+  verification) run their seeds in the gate, and each was fuzzed for 60 seconds on
+  2026-09-30 without a failure. The verification target checks that nothing verifies
+  without a pinned key and that no record the fuzzer made verifies under its own
+  embedded key. `govulncheck` is clean with the pinned toolchain, and staticcheck and
+  gosec raise nothing that affects verification. Not done: longer fuzzing,
+  resource-exhaustion testing beyond the nesting cap (very large inputs, huge arrays,
+  oversized numbers), and timing or side-channel analysis (the verifier handles no
+  secret: only public keys, signatures and records).
 
 ## What is verified
 
