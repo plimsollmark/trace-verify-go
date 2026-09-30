@@ -41,7 +41,7 @@ func loadRuntimeEvidence(root, dir string) ([]Case, error) {
 			// Spec 3.3, "Verifier profile compatibility": a record whose profile is
 			// outside the declared set is refused, and the set's README says a v0.2
 			// validator "is expected to refuse vectors carrying runtime.evidence".
-			Expect: Expect{Outcome: string(record.Refused), Code: "profile_not_accepted",
+			Expect: Expect{Outcome: string(record.Refused), Code: "profile_not_accepted", Derived: true,
 				Source: "spec 3.3 profile compatibility and the set's README: a v0.2 verifier refuses a trace-v0.3 record; the vector's own expectation is a v0.3 grade"},
 			Run: func(reg Registry) Observed { return fromRecord(record.Evaluate(reg.Record, rec, opts)) },
 		})

@@ -245,7 +245,7 @@ func loadSuiteInvalidCanonical(root, dir string) ([]Case, error) {
 		cases = append(cases, Case{
 			File:   rel(root, p),
 			Name:   name,
-			Expect: Expect{Outcome: string(record.Rejected), Code: code, Source: "file name (the vector has no expected block)"},
+			Expect: Expect{Outcome: string(record.Rejected), Code: code, Source: "file name (the vector has no expected block)", Derived: true},
 			Run:    func(reg Registry) Observed { return fromRecord(record.Evaluate(reg.Record, raw, opts)) },
 		})
 		delete(want, name)

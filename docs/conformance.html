@@ -45,7 +45,7 @@ ol.findings li { margin: 0 0 10px; max-width: 900px; }
 <div class="pins">Specification and schema: <code>agentrust-io/trace-spec</code> at <code>63f4d1500c24f837bd96a503a09860a49778e5bb</code>, schema SHA-256 <code>44778f700dae0216f18eda482457b1a9363aef8e8f92adb33d152c925781eea6</code>. Suite vectors: <code>agentrust-io/trace-tests</code> <code>v0.6.1</code>. Verifier: <code>trace-verify-go</code> <code>v0.1.0</code>. The claim in full: <code>docs/conformance-statement.md</code>.</div>
 
 <div class="tiles">
-  <div class="tile"><div class="n">262 of 262</div><div class="l">judged cases agree, from 216 vector files (a file run more than once is several cases)</div></div>
+  <div class="tile"><div class="n">262 of 262</div><div class="l">judged cases agree, from 216 vector files (a file run more than once is several cases); 37 of the 262 are judged against expectations derived from a file name, a README or documented rules</div></div>
   <div class="tile"><div class="n">0</div><div class="l">cases disagree</div></div>
   <div class="tile"><div class="n">1</div><div class="l">run and shown without a verdict (the vector states none)</div></div>
   <div class="tile"><div class="n">77 of 110</div><div class="l">rules some vector notices weakened</div></div>
@@ -1066,67 +1066,67 @@ ol.findings li { margin: 0 0 10px; max-width: 900px; }
 <tr><td class="file">01-no-policy-uri.json</td><td>TR-POL-003 skip</td><td>TR-POL-003 skip</td>
 <td><span class="st agree">✓ agrees</span>
 </td></tr>
-<tr><td class="file">01-no-policy-uri.json#no-resolver</td><td>TR-POL-003 skip</td><td>TR-POL-003 skip</td>
+<tr><td class="file">01-no-policy-uri.json#no-resolver</td><td>TR-POL-003 skip<br><span class="small">derived: without a resolver only the malformed-reference failures remain (the set&#39;s README; tr-pol.md)</span></td><td>TR-POL-003 skip</td>
 <td><span class="st agree">✓ agrees</span>
 </td></tr>
 <tr><td class="file">02-resolved-and-matches.json</td><td>TR-POL-003 pass</td><td>TR-POL-003 pass</td>
 <td><span class="st agree">✓ agrees</span>
 </td></tr>
-<tr><td class="file">02-resolved-and-matches.json#no-resolver</td><td>TR-POL-003 skip</td><td>TR-POL-003 skip</td>
+<tr><td class="file">02-resolved-and-matches.json#no-resolver</td><td>TR-POL-003 skip<br><span class="small">derived: without a resolver only the malformed-reference failures remain (the set&#39;s README; tr-pol.md)</span></td><td>TR-POL-003 skip</td>
 <td><span class="st agree">✓ agrees</span>
 </td></tr>
 <tr><td class="file">03-digest-mismatch-minimal-mutation.json</td><td>TR-POL-003 fail</td><td>TR-POL-003 fail</td>
 <td><span class="st agree">✓ agrees</span>
 </td></tr>
-<tr><td class="file">03-digest-mismatch-minimal-mutation.json#no-resolver</td><td>TR-POL-003 skip</td><td>TR-POL-003 skip</td>
+<tr><td class="file">03-digest-mismatch-minimal-mutation.json#no-resolver</td><td>TR-POL-003 skip<br><span class="small">derived: without a resolver only the malformed-reference failures remain (the set&#39;s README; tr-pol.md)</span></td><td>TR-POL-003 skip</td>
 <td><span class="st agree">✓ agrees</span>
 </td></tr>
 <tr><td class="file">04-digest-mismatch-different-object.json</td><td>TR-POL-003 fail</td><td>TR-POL-003 fail</td>
 <td><span class="st agree">✓ agrees</span>
 </td></tr>
-<tr><td class="file">04-digest-mismatch-different-object.json#no-resolver</td><td>TR-POL-003 skip</td><td>TR-POL-003 skip</td>
+<tr><td class="file">04-digest-mismatch-different-object.json#no-resolver</td><td>TR-POL-003 skip<br><span class="small">derived: without a resolver only the malformed-reference failures remain (the set&#39;s README; tr-pol.md)</span></td><td>TR-POL-003 skip</td>
 <td><span class="st agree">✓ agrees</span>
 </td></tr>
 <tr><td class="file">05-referent-unreachable-no-route.json</td><td>TR-POL-003 unverified</td><td>TR-POL-003 unverified</td>
 <td><span class="st agree">✓ agrees</span>
 </td></tr>
-<tr><td class="file">05-referent-unreachable-no-route.json#no-resolver</td><td>TR-POL-003 skip</td><td>TR-POL-003 skip</td>
+<tr><td class="file">05-referent-unreachable-no-route.json#no-resolver</td><td>TR-POL-003 skip<br><span class="small">derived: without a resolver only the malformed-reference failures remain (the set&#39;s README; tr-pol.md)</span></td><td>TR-POL-003 skip</td>
 <td><span class="st agree">✓ agrees</span>
 </td></tr>
 <tr><td class="file">06-resolved-and-matches-sha384.json</td><td>TR-POL-003 pass</td><td>TR-POL-003 pass</td>
 <td><span class="st agree">✓ agrees</span>
 </td></tr>
-<tr><td class="file">06-resolved-and-matches-sha384.json#no-resolver</td><td>TR-POL-003 skip</td><td>TR-POL-003 skip</td>
+<tr><td class="file">06-resolved-and-matches-sha384.json#no-resolver</td><td>TR-POL-003 skip<br><span class="small">derived: without a resolver only the malformed-reference failures remain (the set&#39;s README; tr-pol.md)</span></td><td>TR-POL-003 skip</td>
 <td><span class="st agree">✓ agrees</span>
 </td></tr>
 <tr><td class="file">07-digest-bound-to-other-referent.json</td><td>TR-POL-003 fail</td><td>TR-POL-003 fail</td>
 <td><span class="st agree">✓ agrees</span>
 </td></tr>
-<tr><td class="file">07-digest-bound-to-other-referent.json#no-resolver</td><td>TR-POL-003 skip</td><td>TR-POL-003 skip</td>
+<tr><td class="file">07-digest-bound-to-other-referent.json#no-resolver</td><td>TR-POL-003 skip<br><span class="small">derived: without a resolver only the malformed-reference failures remain (the set&#39;s README; tr-pol.md)</span></td><td>TR-POL-003 skip</td>
 <td><span class="st agree">✓ agrees</span>
 </td></tr>
 <tr><td class="file">08-policy-uri-is-a-relative-reference.json</td><td>TR-POL-003 fail</td><td>TR-POL-003 fail</td>
 <td><span class="st agree">✓ agrees</span>
 </td></tr>
-<tr><td class="file">08-policy-uri-is-a-relative-reference.json#no-resolver</td><td>TR-POL-003 fail</td><td>TR-POL-003 fail</td>
+<tr><td class="file">08-policy-uri-is-a-relative-reference.json#no-resolver</td><td>TR-POL-003 fail<br><span class="small">derived: without a resolver only the malformed-reference failures remain (the set&#39;s README; tr-pol.md)</span></td><td>TR-POL-003 fail</td>
 <td><span class="st agree">✓ agrees</span>
 </td></tr>
 <tr><td class="file">09-sha384-bound-to-other-referent.json</td><td>TR-POL-003 fail</td><td>TR-POL-003 fail</td>
 <td><span class="st agree">✓ agrees</span>
 </td></tr>
-<tr><td class="file">09-sha384-bound-to-other-referent.json#no-resolver</td><td>TR-POL-003 skip</td><td>TR-POL-003 skip</td>
+<tr><td class="file">09-sha384-bound-to-other-referent.json#no-resolver</td><td>TR-POL-003 skip<br><span class="small">derived: without a resolver only the malformed-reference failures remain (the set&#39;s README; tr-pol.md)</span></td><td>TR-POL-003 skip</td>
 <td><span class="st agree">✓ agrees</span>
 </td></tr>
 <tr><td class="file">10-policy-uri-carries-a-space.json</td><td>TR-POL-003 fail</td><td>TR-POL-003 fail</td>
 <td><span class="st agree">✓ agrees</span>
 </td></tr>
-<tr><td class="file">10-policy-uri-carries-a-space.json#no-resolver</td><td>TR-POL-003 fail</td><td>TR-POL-003 fail</td>
+<tr><td class="file">10-policy-uri-carries-a-space.json#no-resolver</td><td>TR-POL-003 fail<br><span class="small">derived: without a resolver only the malformed-reference failures remain (the set&#39;s README; tr-pol.md)</span></td><td>TR-POL-003 fail</td>
 <td><span class="st agree">✓ agrees</span>
 </td></tr>
 <tr><td class="file">11-referent-unreachable-route-fails.json</td><td>TR-POL-003 unverified</td><td>TR-POL-003 unverified</td>
 <td><span class="st agree">✓ agrees</span>
 </td></tr>
-<tr><td class="file">11-referent-unreachable-route-fails.json#no-resolver</td><td>TR-POL-003 skip</td><td>TR-POL-003 skip</td>
+<tr><td class="file">11-referent-unreachable-route-fails.json#no-resolver</td><td>TR-POL-003 skip<br><span class="small">derived: without a resolver only the malformed-reference failures remain (the set&#39;s README; tr-pol.md)</span></td><td>TR-POL-003 skip</td>
 <td><span class="st agree">✓ agrees</span>
 </td></tr>
 </table></div>

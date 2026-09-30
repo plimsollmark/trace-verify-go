@@ -65,6 +65,7 @@ type page struct {
 	SpecCommit, SuiteTag, SchemaSHA string
 	Version                         string
 	Agree, Disagree, None, Judged   int
+	Derived, Own                    int // judged cases whose expectation the harness derived, and the rest
 	Files                           int
 	Rules, Distinguished            int
 	Sets                            []setView
@@ -97,10 +98,16 @@ func run(root, reportPath, out, statementOut string) (disagree int, err error) {
 				sv.None++
 				p.None++
 			case v.Passed():
+				if v.Case.Expect.Derived {
+					p.Derived++
+				}
 				r.State = "agree"
 				sv.Agree++
 				sv.Judged++
 			default:
+				if v.Case.Expect.Derived {
+					p.Derived++
+				}
 				r.State = "disagree"
 				sv.Judged++
 			}
@@ -112,6 +119,7 @@ func run(root, reportPath, out, statementOut string) (disagree int, err error) {
 		p.Sets = append(p.Sets, sv)
 	}
 	p.Disagree = p.Judged - p.Agree
+	p.Own = p.Judged - p.Derived
 
 	cov := conformance.Mutation(root, conformance.Sets, conformance.Default())
 	most := 1
@@ -139,8 +147,13 @@ func run(root, reportPath, out, statementOut string) (disagree int, err error) {
 		return 0, fmt.Errorf("%s has no numbered list under %q", reportPath, findingsHeading)
 	}
 	// The report quotes the headline; it must be the one this run produced.
-	if headline := fmt.Sprintf("%d of %d judged cases agree, from %d vector files", p.Agree, p.Judged, p.Files); !strings.Contains(string(reportText), headline) {
-		return 0, fmt.Errorf("%s does not say %q", reportPath, headline)
+	for _, headline := range []string{
+		fmt.Sprintf("%d of %d judged cases agree, from %d vector files", p.Agree, p.Judged, p.Files),
+		fmt.Sprintf("%d of them against the vectors' own expected results and %d against expectations derived", p.Judged-p.Derived, p.Derived),
+	} {
+		if !strings.Contains(strings.Join(strings.Fields(string(reportText)), " "), headline) {
+			return 0, fmt.Errorf("%s does not say %q", reportPath, headline)
+		}
 	}
 
 	for _, w := range []struct {
@@ -277,7 +290,7 @@ ol.findings li { margin: 0 0 10px; max-width: 900px; }
 <div class="pins">Specification and schema: <code>agentrust-io/trace-spec</code> at <code>{{.SpecCommit}}</code>, schema SHA-256 <code>{{.SchemaSHA}}</code>. Suite vectors: <code>agentrust-io/trace-tests</code> <code>{{.SuiteTag}}</code>. Verifier: <code>trace-verify-go</code> <code>{{.Version}}</code>. The claim in full: <code>docs/conformance-statement.md</code>.</div>
 
 <div class="tiles">
-  <div class="tile"><div class="n">{{.Agree}} of {{.Judged}}</div><div class="l">judged cases agree, from {{.Files}} vector files (a file run more than once is several cases)</div></div>
+  <div class="tile"><div class="n">{{.Agree}} of {{.Judged}}</div><div class="l">judged cases agree, from {{.Files}} vector files (a file run more than once is several cases); {{.Derived}} of the {{.Judged}} are judged against expectations derived from a file name, a README or documented rules</div></div>
   <div class="tile"><div class="n">{{.Disagree}}</div><div class="l">cases disagree</div></div>
   <div class="tile"><div class="n">{{.None}}</div><div class="l">run and shown without a verdict (the vector states none)</div></div>
   <div class="tile"><div class="n">{{.Distinguished}} of {{.Rules}}</div><div class="l">rules some vector notices weakened</div></div>
@@ -334,7 +347,10 @@ form TRACE v0.2 "Authority and conformance claims" asks for.
 ## Result
 
 {{.Agree}} of {{.Judged}} judged cases agree, from {{.Files}} vector files; {{.Disagree}} disagree; {{.None}} run and reported
-without a verdict, because the vector states none. A file run more than once is several
+without a verdict, because the vector states none. Of the {{.Judged}} judged cases, {{.Own}} are judged
+against the vectors' own expected results and {{.Derived}} against expectations derived from
+a file name, a set's README or the suite's documented rules (each says which on the
+conformance page). A file run more than once is several
 cases: delegation vectors in both record orders, build-provenance vectors at each depth,
 and policy-resolution vectors with and without a resolver.
 

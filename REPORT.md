@@ -2,10 +2,12 @@
 
 A verifier for TRACE v0.2 Trust Records in Go, written from the specification by a
 contributor outside the TRACE project, and run against the project's own published
-vectors: 262 of 262 judged cases agree, from 216 vector files. Writing it surfaced 22
-findings about the specification, its supporting artifacts and the vectors, listed
-below. The exact claim
-(revisions, schema digest, levels, per-set counts) is the generated
+vectors: 262 of 262 judged cases agree, from 216 vector files, 225 of them against the
+vectors' own expected results and 37 against expectations derived from a file name, a
+set's README or the suite's documented rules, because those vectors state none that a
+v0.2 verifier can use. Writing it surfaced 22 findings about the specification, its
+supporting artifacts and the vectors, listed below. The exact claim (revisions, schema
+digest, levels, per-set counts) is the generated
 [conformance statement](docs/conformance-statement.md); every vector's verdict is on the
 [conformance page](docs/conformance.html).
 

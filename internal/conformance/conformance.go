@@ -43,6 +43,10 @@ type Expect struct {
 	// status and nothing else (policy-resolution: "One value: the status of the
 	// TR-POL-003 finding").
 	Finding *FindingExpect
+	// Derived marks an expectation the vector does not state: the harness derives it
+	// from the file name, the set's README or the suite's documented rules, and Source
+	// says how. The page and the statement count these apart.
+	Derived bool
 	// NoVerdict, when set, says why the case deliberately expects nothing: it is run and
 	// shown, and neither passes nor fails. A case with no outcome, no finding and no
 	// reason is an expectation that failed to decode, and fails.

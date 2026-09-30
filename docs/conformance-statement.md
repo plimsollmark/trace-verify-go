@@ -16,7 +16,10 @@ form TRACE v0.2 "Authority and conformance claims" asks for.
 ## Result
 
 262 of 262 judged cases agree, from 216 vector files; 0 disagree; 1 run and reported
-without a verdict, because the vector states none. A file run more than once is several
+without a verdict, because the vector states none. Of the 262 judged cases, 225 are judged
+against the vectors' own expected results and 37 against expectations derived from
+a file name, a set's README or the suite's documented rules (each says which on the
+conformance page). A file run more than once is several
 cases: delegation vectors in both record orders, build-provenance vectors at each depth,
 and policy-resolution vectors with and without a resolver.
 

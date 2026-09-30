@@ -67,9 +67,10 @@ func loadPolicyResolution(root, dir string) ([]Case, error) {
 				}
 			}
 			cases = append(cases, Case{
-				File:   rel(root, p) + map[bool]string{true: "", false: "#no-resolver"}[withResolver],
-				Name:   name,
-				Expect: Expect{Finding: &FindingExpect{Rule: "TR-POL-003", Status: expect}},
+				File: rel(root, p) + map[bool]string{true: "", false: "#no-resolver"}[withResolver],
+				Name: name,
+				Expect: Expect{Finding: &FindingExpect{Rule: "TR-POL-003", Status: expect}, Derived: !withResolver,
+					Source: map[bool]string{true: "", false: "derived: without a resolver only the malformed-reference failures remain (the set's README; tr-pol.md)"}[withResolver]},
 				Run: func(reg Registry) Observed {
 					opts.Mode = record.ModeLevel
 					return fromRecord(record.Evaluate(reg.Record, rec, opts))
@@ -128,7 +129,7 @@ func loadSuiteRecords(root, dir string) ([]Case, error) {
 		c := Case{
 			File:   rel(root, p),
 			Name:   name,
-			Expect: Expect{Outcome: string(e.outcome), Code: e.code, Source: e.source},
+			Expect: Expect{Outcome: string(e.outcome), Code: e.code, Source: e.source, Derived: true},
 			Run:    func(reg Registry) Observed { return fromRecord(record.Evaluate(reg.Record, raw, opts)) },
 		}
 		if e.outcome == "" {
