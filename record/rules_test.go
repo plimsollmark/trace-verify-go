@@ -348,3 +348,20 @@ func TestKeyPinnedNeedsAVerifiedSignature(t *testing.T) {
 		t.Fatalf("signed under a pinned key: %s %s, key_pinned %+v", r.Outcome, r.Code, f)
 	}
 }
+
+// A line break inside the signature is a second spelling of the same signature bytes,
+// which would give the record a second chain digest (spec 3.2.2: base64url, no padding).
+func TestSignatureWithALineBreakIsMalformed(t *testing.T) {
+	good := build(t, nil)
+	var r map[string]any
+	if err := json.Unmarshal(good, &r); err != nil {
+		t.Fatal(err)
+	}
+	sig := r["signature"].(string)
+	r["signature"] = sig[:20] + "\n" + sig[20:] + "\r\n"
+	b, _ := json.Marshal(r)
+	res := Verify(b, Options{Now: testNow, AcceptedProfiles: []string{ProfileV02}})
+	if res.Outcome != Rejected || res.Code != "signature_malformed" {
+		t.Fatalf("got %s %s", res.Outcome, res.Code)
+	}
+}

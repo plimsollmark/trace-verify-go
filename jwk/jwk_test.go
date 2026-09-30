@@ -81,6 +81,8 @@ func TestRefusals(t *testing.T) {
 		{"x padded", `{"kty":"OKP","crv":"Ed25519","x":"11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo="}`, ErrMalformed},
 		{"x short", `{"kty":"OKP","crv":"Ed25519","x":"11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHUR"}`, ErrMalformed},
 		{"x absent", `{"kty":"OKP","crv":"Ed25519"}`, ErrMalformed},
+		{"x with a line break", `{"kty":"OKP","crv":"Ed25519","x":"11qYAYKxCrfVS_7TyWQHOg7h\ncvPapiMlrwIaaPcHURo"}`, ErrMalformed},
+		{"x with a trailing CRLF", `{"kty":"OKP","crv":"Ed25519","x":"11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo\r\n"}`, ErrMalformed},
 		{"EC point off the curve", `{"kty":"EC","crv":"P-256","x":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAE","y":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAE"}`, ErrMalformed},
 	}
 	for _, c := range cases {
@@ -137,6 +139,19 @@ func TestECRawSignatures(t *testing.T) {
 		}
 		if err := k.Verify(msg, der); !errors.Is(err, ErrBadSignature) {
 			t.Fatalf("%s DER signature: %v, want ErrBadSignature", c.name, err)
+		}
+	}
+}
+
+// Go's decoder skips CR and LF even in Strict mode; B64 must not, or a signature has
+// more than one spelling.
+func TestB64RefusesBytesOutsideTheAlphabet(t *testing.T) {
+	if b, err := B64.DecodeString("AQID"); err != nil || len(b) != 3 {
+		t.Fatalf("AQID: %v %v", b, err)
+	}
+	for _, s := range []string{"AQ\nID", "AQID\r\n", "\nAQID", "AQ ID", "AQ+D", "AQ/D", "AQI="} {
+		if _, err := B64.DecodeString(s); err == nil {
+			t.Errorf("%q decoded", s)
 		}
 	}
 }

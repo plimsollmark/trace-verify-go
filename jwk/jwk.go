@@ -43,9 +43,29 @@ type Key struct {
 }
 
 // B64 is the encoding JOSE uses throughout: base64url with no padding (RFC 7515
-// section 2). Strict, so the bits after the last whole byte must be zero and one
-// value has one spelling.
-var B64 = base64.RawURLEncoding.Strict()
+// section 2; spec 3.2.2 "base64url, no padding"). Strict, so the bits after the last
+// whole byte must be zero, and any byte outside the base64url alphabet is refused, so
+// one value has one spelling.
+var B64 b64url
+
+type b64url struct{}
+
+var rawURL = base64.RawURLEncoding.Strict()
+
+func (b64url) EncodeToString(b []byte) string { return rawURL.EncodeToString(b) }
+
+// DecodeString refuses what Go's decoder would skip: it ignores CR and LF anywhere in
+// the input, even in Strict mode, which would give a signature more than one spelling
+// (RFC 4648 section 3.3: reject characters outside the alphabet).
+func (b64url) DecodeString(s string) ([]byte, error) {
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if !('A' <= c && c <= 'Z' || 'a' <= c && c <= 'z' || '0' <= c && c <= '9' || c == '-' || c == '_') {
+			return nil, fmt.Errorf("byte %#02x at offset %d is outside the base64url alphabet", c, i)
+		}
+	}
+	return rawURL.DecodeString(s)
+}
 
 // Parse reads a public JWK from a parsed JSON value. It refuses any private member
 // before looking at anything else, so a leaked private key is reported as that.
