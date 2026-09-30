@@ -244,6 +244,98 @@ var Rules = []Rule{
 		}},
 
 	// --- claims ---
+	// Spec 3.1.4, the reproducibility claim and its re-execution result. The schema holds
+	// these shape rules too; they come first so the named cause decides the code.
+	{ID: "reproducibility_claim_complete", Section: "3.1.4 reproducibility", Stage: StageClaims,
+		Check: func(s *state) Finding {
+			r, ok := s.get("reproducibility")
+			ro, isObj := r.(*jcs.Object)
+			if !ok {
+				return skip("no reproducibility claim")
+			}
+			for _, f := range []string{"function", "code_identity", "input_closure", "transcript_digest"} {
+				if _, has := ro.Get(f); !isObj || !has {
+					return failf("claim_incomplete", "reproducibility.%s is absent", f)
+				}
+			}
+			return pass()
+		}},
+	{ID: "reproducibility_closure_entries", Section: "3.1.4 input_closure: {id, digest, resolver}, digest required on every entry", Stage: StageClaims,
+		Check: func(s *state) Finding {
+			v, ok := s.get("reproducibility", "input_closure")
+			if !ok {
+				return skip("no input_closure")
+			}
+			list, _ := v.([]any)
+			for i, e := range list {
+				eo, _ := e.(*jcs.Object)
+				for _, f := range []string{"id", "digest", "resolver"} {
+					if _, has := eo.Get(f); !has {
+						return failf("closure_entry_incomplete", "input_closure[%d].%s is absent", i, f)
+					}
+				}
+			}
+			return pass()
+		}},
+	{ID: "appraisal_method_known", Section: "3.1.4 appraisal.method: a closed set, one value", Stage: StageClaims,
+		Check: func(s *state) Finding {
+			m, ok := s.get("appraisal", "method")
+			if !ok {
+				return skip("no appraisal.method")
+			}
+			if m != "re-execution" {
+				return failf("unknown_method", "appraisal.method %v is not re-execution", m)
+			}
+			return pass()
+		}},
+	{ID: "re_execution_has_method", Section: "3.1.4 re_execution MUST be absent unless method is re-execution", Stage: StageClaims,
+		Check: func(s *state) Finding {
+			_, hasResult := s.get("appraisal", "re_execution")
+			_, hasMethod := s.get("appraisal", "method")
+			if hasResult && !hasMethod {
+				return fail("re_execution_without_method", "appraisal.re_execution is present with no appraisal.method")
+			}
+			return pass()
+		}},
+	{ID: "method_has_re_execution", Section: "3.1.4 re_execution MUST be present when method is re-execution", Stage: StageClaims,
+		Check: func(s *state) Finding {
+			m, _ := s.get("appraisal", "method")
+			if _, hasResult := s.get("appraisal", "re_execution"); m == "re-execution" && !hasResult {
+				return fail("method_without_re_execution", "appraisal.method is re-execution with no appraisal.re_execution")
+			}
+			return pass()
+		}},
+	{ID: "re_execution_outcome_known", Section: "3.1.4 outcome: reproduced, diverged or not-attempted", Stage: StageClaims,
+		Check: func(s *state) Finding {
+			o, ok := s.get("appraisal", "re_execution", "outcome")
+			if _, has := s.get("appraisal", "re_execution"); !has {
+				return skip("no re_execution result")
+			}
+			if !ok || !slices.Contains([]any{"reproduced", "diverged", "not-attempted"}, o) {
+				return failf("unknown_outcome", "re_execution.outcome %v is not reproduced, diverged or not-attempted", o)
+			}
+			return pass()
+		}},
+	{ID: "diverged_has_observed_digest", Section: "3.1.4 diverged MUST record the verifier's observed digest", Stage: StageClaims,
+		Check: func(s *state) Finding {
+			if o, _ := s.get("appraisal", "re_execution", "outcome"); o != "diverged" {
+				return skip("not diverged")
+			}
+			if _, ok := s.get("appraisal", "re_execution", "observed_digest"); !ok {
+				return fail("diverged_without_observed_digest", "a diverged result carries no observed_digest")
+			}
+			return pass()
+		}},
+	{ID: "not_attempted_has_reason", Section: "3.1.4 not-attempted MUST carry the reason", Stage: StageClaims,
+		Check: func(s *state) Finding {
+			if o, _ := s.get("appraisal", "re_execution", "outcome"); o != "not-attempted" {
+				return skip("not not-attempted")
+			}
+			if _, ok := s.get("appraisal", "re_execution", "reason"); !ok {
+				return fail("not_attempted_without_reason", "a not-attempted result carries no reason")
+			}
+			return pass()
+		}},
 	{ID: "schema", Section: "Authority and conformance claims: schema/trace-claim.json", Stage: StageClaims,
 		Check: func(s *state) Finding {
 			sc, err := schema.TraceClaim()

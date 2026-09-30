@@ -1,6 +1,6 @@
 # Plan: a Go verifier for TRACE v0.2, written from the specification
 
-Status: **Phases 0 to 2 done; phase 3 in progress (delegation and revocation done; reproducibility next)** (2026-09-30). Update the status line and the phase
+Status: **Phases 0 to 3 done, phase 4 next** (2026-09-30). Update the status line and the phase
 table as work lands.
 
 ## Goal
@@ -98,7 +98,7 @@ is reported, which is also a finding for the suite.
 | 0 | Repository, plan, clean-room log, vendored vectors with provenance, gate | none | done |
 | 1 | `jcs`, `jwk`, embedded-signature binding, freshness, profile compatibility | spec `canonicalization-boundary` (6), `verifier-compatibility` (8); suite `canonicalization` (4) and the four `invalid_canonical_*` | done: 22 of 22 pass; mutation check passes (6 rules not yet load-bearing, each with its reason in `internal/conformance`) |
 | 2 | Level 0 to 2 named checks, caller-supplied policy resolver (TR-POL-003), the schema as data, two modes (spec verification and suite level check) | suite `tests/vectors` (9), `policy-resolution` (11, each run with and without a resolver) | done: policy-resolution 22/22; suite records 8/8 judged plus 1 reported without an expectation (finding 6); `record/rules_test.go` runs the 85 positive and negative cases the suite docs list |
-| 3 | Delegation digests, revocation, reproducibility-claim shape rules | `delegation-link` (24), `revocation-bundle` (28), `reproducibility-claim` (21) | delegation done: 24/24, each also run with its records reversed (48 cases), every one of the ten chain rules noticed by exactly its two vectors; revocation done: 28/28 including every evidence field the vectors list, all nine rules load-bearing; reproducibility pending |
+| 3 | Delegation digests, revocation, reproducibility-claim shape rules | `delegation-link` (24), `revocation-bundle` (28), `reproducibility-claim` (21) | delegation done: 24/24, each also run with its records reversed (48 cases), every one of the ten chain rules noticed by exactly its two vectors; revocation done: 28/28 including every evidence field the vectors list, all nine rules load-bearing; reproducibility done: 21/21, each of the eight shape rules noticed by exactly its two vectors, and every claim digest recomputed from the vector context |
 | 4 | References: citation resolution, condition appraisal, approval outcome, build-provenance depth | `citation-resolution` (16), `condition-appraisal` (9 files), `chap-approval-outcome` (7 files), `build-provenance-depth` (6) | pending |
 | 5 | Action receipts and gap disclosure (informative in the spec) | `action-receipts/conformance` (30), `gap-disclosure` (20), `acta` (6) | pending |
 | 6 | Transparency anchoring (TR-ANC-002 receipts, registry anchor leaves), COSE_Sign1 and JWS envelopes | to be found in the pinned revisions | pending |

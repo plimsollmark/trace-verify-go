@@ -30,6 +30,7 @@ documents listed below, not as files read.
 | `schema/trace-claim.json` (keyword census; field patterns and enums via `jq`) | 2026-09-30 | the schema evaluator and the named checks |
 | `examples/delegation-link/README.md` and its 24 vectors | 2026-09-30 | phase 3 adapter |
 | `examples/revocation-bundle/README.md` and its 28 vectors | 2026-09-30 | phase 3 adapter |
+| `examples/reproducibility-claim/README.md` and its 21 vectors | 2026-09-30 | phase 3 adapter |
 | `schema/trace-revocation.json`, `schema/trace-revocation-bundle.json` | 2026-09-30 | the bundle and statement format, and the bundle signature pre-image (its `sig` description) |
 | `docs/rfcs/a2a-delegation-profile.md`, sections 1 to 5 | 2026-09-30 | the ten chain rules, their classes, and the three decisions (preimage, no cycle rule, unreadable is unverifiable) |
 
