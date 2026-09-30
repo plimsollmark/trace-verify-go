@@ -42,6 +42,12 @@ documents listed below, not as files read.
 | `examples/action-receipts/README.md`, and the vectors under `conformance/` (30) and `gap-disclosure/` (20) | 2026-09-30 | phase 5 adapters |
 | `examples/action-receipts/acta/README.md`, `expected.json`, both key files and its 6 vectors (not `gen.mjs`) | 2026-09-30 | phase 5 Acta adapter |
 | `docs/crosswalks/acta-decision-receipts.md` | 2026-09-30 | the Acta envelope, kid format, chain digest and verifier obligations |
+| file list of the repository at the pinned commit (names only, `gh api .../git/trees`) | 2026-09-30 | whether anchoring or envelope vectors exist (none do) |
+| `spec/trace-v0.2.md` "Authority and conformance claims", 3.2 and 3.2.1 | 2026-09-30 | envelope forms; what a conformance claim must name |
+| `spec/registry-anchor-v1.md` | 2026-09-30 | phase 6: leaf canonical form, tree, entry, inclusion proof |
+| `docs/tutorials/anchoring-to-the-registry.md` | 2026-09-30 | where published anchors live; the Level 2 ordering problem |
+| `examples/runtime-evidence/README.md`, the 14 vectors' `record.eat_profile` and `expected` | 2026-09-30 | phase 6 adapter |
+| `docs/rfcs/runtime-evidence-profile.md`, the header and sections 1 and 2 | 2026-09-30 | the proposal's scope, to size grading it |
 
 ## trace-tests at `v0.6.1`
 
@@ -55,9 +61,28 @@ documents listed below, not as files read.
 | `tests/vectors/policy-resolution/README.md`, `resolutions.json`, and its vectors | 2026-09-30 | phase 2 adapter |
 | `tests/vectors/invalid_canonical_*.json`, `canonicalization/*.json` and the nine other top-level vectors | 2026-09-30 | phase 1 and 2 adapters |
 
+## trace-tests at `v0.6.1`, added in phase 6
+
+| File | Date | Why |
+|---|---|---|
+| file list of the repository at the tag (names only) | 2026-09-30 | whether anchoring vectors exist (none do) |
+| `docs/modules/tr-anc.md` (again) | 2026-09-30 | TR-ANC-002's positive and negative cases |
+
+## trace-registry at `e26b85a4be2507342aeaa2ef927a28ee53c99996`
+
+| File | Date | Why |
+|---|---|---|
+| file list of the repository (names only) | 2026-09-30 | where entries, proofs and claims live |
+| `LICENSE`, `NOTICE`, `samples/README.md` | 2026-09-30 | data licensing; what the sample is |
+| the files vendored under `testdata/registry/` | 2026-09-30 | the three published anchors |
+
+No Python in this repository (`src/trace_verify/`, `tools/`, `tests/`) was read.
+
 ## Standards (not TRACE files; listed so the inputs are complete)
 
 | Document | Date | Why |
 |---|---|---|
 | [RFC 8785](https://www.rfc-editor.org/rfc/rfc8785.txt), sections 3.2 and Appendix B | 2026-09-30 | canonical form; the tests use its samples verbatim |
 | [RFC 8037](https://www.rfc-editor.org/rfc/rfc8037.txt), Appendix A | 2026-09-30 | the Ed25519 JWK, thumbprint and signature the `jwk` tests use |
+| RFC 6962 section 2.1 and RFC 9162 section 2.1.3 (from memory, checked by test) | 2026-09-30 | the independent tree and audit path the anchor tests compare against |
+| CPython's `json.dumps`, run locally as Anchor Format v1 section 1's reference expression | 2026-09-30 | the golden bytes in `anchor/golden_test.go` |

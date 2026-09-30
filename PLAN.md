@@ -1,6 +1,6 @@
 # Plan: a Go verifier for TRACE v0.2, written from the specification
 
-Status: **Phases 0 to 5 done; phase 6 (anchoring, envelopes, runtime evidence) next** (2026-09-30). Update the status line and the phase
+Status: **Phases 0 to 6 done; phase 7 (report and conformance statement) next** (2026-09-30). Update the status line and the phase
 table as work lands.
 
 ## Goal
@@ -64,8 +64,8 @@ a lone surrogate with U+FFFD; both must be refusals here).
 | `record` | Trust Record verification: signature binding before any field is trusted (3.3 step 1), freshness (3.2.2), profile compatibility (3.3), the `origin` rule (3.1.1), and the named checks of the suite's levels (TR-ENV, TR-SIG, TR-POL, TR-APR at Level 0; TR-RTE, TR-SCA at 1; TR-TXN, TR-ANC at 2) |
 | `chain`, `revocation`, `provenance`, `citation`, `references` | 3.1.3 delegation digests, 3.2.3 revocation, 3.3.1 build-provenance depth, 3.1.2 reference resolution |
 | `receipt`, `acta` | 3.3.2 to 3.3.4: action receipts, GapDisclosure and its policy input; Acta decision receipts as a second receipt profile |
-| later: `anchor` | transparency anchoring |
-| `cmd/trace-verify` | The command: a record in, a per-rule result out, exit status by level |
+| `anchor` | TRACE Registry Anchor Format v1: the leaf's own canonical form (not RFC 8785), the RFC 6962 tree, the RFC 9162 inclusion check; TR-ANC-002 runs it over caller-supplied evidence |
+| `cmd/trace-verify-go` | The command: a record in, a per-rule result out, exit status by level |
 
 **Every check is an entry in one rule registry** (ID, level, spec section, function),
 and the verifier runs the registry, so the inventory of what it checks is the code that
@@ -103,7 +103,7 @@ is reported, which is also a finding for the suite.
 | 3 | Delegation digests, revocation, reproducibility-claim shape rules | `delegation-link` (24), `revocation-bundle` (28), `reproducibility-claim` (21) | delegation done: 24/24, each also run with its records reversed (48 cases), every one of the ten chain rules noticed by exactly its two vectors; revocation done: 28/28 including every evidence field the vectors list, all nine rules load-bearing; reproducibility done: 21/21, each of the eight shape rules noticed by exactly its two vectors, and every claim digest recomputed from the vector context |
 | 4 | References: citation resolution, condition appraisal, approval outcome, build-provenance depth | `citation-resolution` (16), `condition-appraisal` (9 files), `chap-approval-outcome` (7 files), `build-provenance-depth` (6) | build-provenance-depth done: 6 vectors at 3 depths, 18/18 (acceptance, verified depth, failures and unresolved evidence all compared); citation-resolution done: 16/16 with every citation row compared; condition-appraisal 5/5 and chap-approval-outcome 4/4, every step finding compared; done |
 | 5 | Action receipts and gap disclosure (informative in the spec) | `action-receipts/conformance` (30), `gap-disclosure` (20), `acta` (6) | done: 30/30, 20/20 and 6/6 with every failure, warning, controller outcome and reported gap field compared; every receipt and disclosure rule noticed by at least its two vectors except `receipt_structure` and the Acta decision vocabulary, which no vector carries (unit tests cover both) |
-| 6 | Transparency anchoring (TR-ANC-002 receipts, registry anchor leaves), COSE_Sign1 and JWS envelopes, and the draft runtime-evidence profile | `runtime-evidence/vectors` (14, with `docs/rfcs/runtime-evidence-profile.md`); anchoring vectors to be found in the pinned revisions | pending |
+| 6 | Transparency anchoring (TR-ANC-002, Anchor Format v1 leaves and inclusion proofs); the draft runtime-evidence profile; JWS and COSE_Sign1 envelopes | `runtime-evidence/vectors` (14); no anchoring vector exists at either pin, so the three anchors the published registry holds at `trace-registry` `e26b85a` are vendored under `testdata/registry/` | done, with two scope decisions: anchoring implemented and checked against the three published anchors, section 1 golden bytes from the reference expression, and the tree against an independent RFC 6962 for 1 to 70 leaves; runtime-evidence 14/14 refused as a v0.2 verifier must (grading the v0.3 draft needs an Intel TDX quote verifier: not built); envelopes not implemented, because 3.2.2 names them without specifying them (finding 18) |
 | 7 | Implementation report, mutation check results, HTML conformance page, conformance statement in the form the spec requires | all of the above | pending |
 
 Phases 1 and 2 are the useful minimum: a Level 0 verifier with the canonicalization traps
@@ -226,6 +226,45 @@ closed. Each later phase stands alone.
     complete passes all twenty. This verifier takes the policy as input and tests the
     bound (`receipt/receipt_test.go`); a vector pair with a policy field in `context`
     would make it portable.
+
+18. **The enveloping signature forms are named, not specified.** 3.2.2 allows "a JWS
+    (RFC 7515) whose payload is the record, a COSE_Sign1 envelope, or cMCP's
+    RuntimeClaim", and says each profile MUST declare its binding form. Nothing says
+    whether a JWS payload must be the record's RFC 8785 bytes or any serialization of
+    it, which key verifies (`cnf.jwk` inside the payload, or a header `kid`), which JWS
+    and COSE algorithms map to 3.2.1's list, whether a COSE payload is JSON or CBOR
+    claims, or which binding form the v0.2 profile itself declares. No vector at either
+    pin carries an envelope. An implementation would be guesses that no vector can
+    check, so this verifier implements the embedded form only and refuses the rest.
+19. **Anchor Format v1 section 1 is defined by a Python call, not by its prose.** The
+    document says "a conforming verifier can be written from this document alone", but
+    its four rules do not determine the bytes: the short escapes (`\n`, `\t`, and so
+    on), lowercase hex in `\uXXXX`, the escaping of U+007F (ASCII, yet escaped), and
+    `-0` written as `0` all come from the reference expression `json.dumps(claim,
+    sort_keys=True, separators=(",", ":"), ensure_ascii=True)`. This verifier matches
+    that expression byte for byte on a claim built to hit each case
+    (`anchor/testdata/golden.py`); spelling those four facts out in section 1 would
+    make the prose sufficient.
+20. **Published registry entries carry members section 4 says they do not.** Section 4:
+    "An anchor is recorded as one JSON object with exactly these fields" (five). The
+    2026-09-01 and 2026-09-25 entries also carry `canonicalization_id` and
+    `mmr_checkpoint`. A verifier held to "exactly" would reject the live registry; this
+    one reads the five, reports the rest, and ignores them.
+21. **No record anchored through the published pipeline can pass Level 2.** TR-ANC-001
+    requires `transparency` in the signed record, and the anchored unit is the complete
+    signed record, so the record must name its entry before the entry exists. Anchor
+    Format v1 defines no URI for an entry and no way to reserve one, and one published
+    entry's `batch_id` is the first twelve hex digits of its own root. None of the three
+    anchored claims in the registry carries `transparency`; the one v0.2 Trust Record
+    among them passes TR-ANC-002 here and fails TR-ANC-001. The registry tutorial says
+    as much ("a Level 2 workflow needs a registry arrangement that lets the final record
+    name its entry before its bytes are committed"); the specification does not.
+22. **Anchoring has no portable vector, and the real anchors miss both hard parts.**
+    Neither repository carries a TR-ANC-002 vector. The three published anchors are
+    single-leaf batches whose claims are ASCII-only and integer-only, so they exercise
+    neither the audit path nor the canonicalization trap section 0 warns about. This
+    verifier's tests cover both; a vector set with multi-leaf batches and a non-ASCII
+    claim would let a second implementation show it.
 
 ## Decisions that are not this plan's to make
 

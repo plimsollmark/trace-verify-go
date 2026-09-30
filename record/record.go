@@ -148,6 +148,17 @@ type Options struct {
 	// record that named its own resolver could name one that agrees with it"
 	// (trace-tests docs/modules/tr-pol.md). Unset, the resolution part is skipped.
 	ResolvePolicy func(uri string) ([]byte, error)
+
+	// Anchor is the transparency evidence TR-ANC-002 checks: an inclusion proof and the
+	// registry entry the caller retrieved without contacting the record's issuer (Anchor
+	// Format v1 section 6). Unset, the check is reported unverified.
+	Anchor *Anchor
+}
+
+// Anchor is an inclusion proof and a registry entry, as JSON bytes (Anchor Format v1
+// sections 4 and 5).
+type Anchor struct {
+	Proof, Entry []byte
 }
 
 const (

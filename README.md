@@ -15,12 +15,12 @@ section 2.1.3.1 requires of an implementation.
 ## Use
 
 ```sh
-go run ./cmd/trace-verify -pin-jwk issuer.jwk record.json   # the spec's verification (3.3)
-go run ./cmd/trace-verify -level 0 -archived record.json     # the suite's level 0 check
+go run ./cmd/trace-verify-go -pin-jwk issuer.jwk record.json   # the spec's verification (3.3)
+go run ./cmd/trace-verify-go -level 0 -archived record.json     # the suite's level 0 check
 go run ./cmd/trace-conformance                               # rerun every vector, rewrite docs/conformance.html
 ```
 
-`trace-verify` exits 0 when the record is verified (or meets the level), 1 otherwise,
+`trace-verify-go` exits 0 when the record is verified (or meets the level), 1 otherwise,
 and 2 on a usage or input error. Without `-pin` or `-pin-jwk` it says, in its output,
 that the signature authenticates only the record's own key and not its issuer.
 

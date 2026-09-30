@@ -1,6 +1,6 @@
-// Command trace-verify checks one TRACE v0.2 Trust Record.
+// Command trace-verify-go checks one TRACE v0.2 Trust Record.
 //
-//	trace-verify [flags] record.json      (or - for standard input)
+//	trace-verify-go [flags] record.json      (or - for standard input)
 //
 // By default it performs the specification's verification (spec 3.3): the signature
 // binding first, then every claim. With -level N it performs the conformance suite's
@@ -9,6 +9,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -32,7 +33,7 @@ func (l *list) String() string     { return strings.Join(*l, ",") }
 func (l *list) Set(v string) error { *l = append(*l, v); return nil }
 
 func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
-	fs := flag.NewFlagSet("trace-verify", flag.ContinueOnError)
+	fs := flag.NewFlagSet("trace-verify-go", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	var accept, pins, pinFiles list
 	level := fs.Int("level", -1, "perform the suite's level check at `N` (0, 1 or 2) instead of the spec's verification")
@@ -45,10 +46,12 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	skew := fs.Duration("skew", 0, "allowed clock skew (default 5m, spec 3.2.2)")
 	nonce := fs.String("nonce", "", "the challenge nonce this verifier issued")
 	policyDir := fs.String("policy-dir", "", "a `directory` with resolutions.json, for resolving policy.policy_uri (TR-POL-003)")
+	anchorProof := fs.String("anchor-proof", "", "an inclusion proof `file` for TR-ANC-002 (with -anchor-entry)")
+	anchorEntry := fs.String("anchor-entry", "", "the registry entry `file` the proof is against, one JSON object (with -anchor-proof)")
 	asJSON := fs.Bool("json", false, "print the result as JSON")
 	all := fs.Bool("v", false, "also list rules that were skipped")
 	fs.Usage = func() {
-		fmt.Fprintln(stderr, "usage: trace-verify [flags] record.json|-")
+		fmt.Fprintln(stderr, "usage: trace-verify-go [flags] record.json|-")
 		fs.PrintDefaults()
 	}
 	if err := fs.Parse(args); err != nil {
@@ -66,7 +69,7 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		data, err = os.ReadFile(fs.Arg(0))
 	}
 	if err != nil {
-		fmt.Fprintln(stderr, "trace-verify:", err)
+		fmt.Fprintln(stderr, "trace-verify-go:", err)
 		return 2
 	}
 
@@ -81,14 +84,31 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	for _, f := range pinFiles {
 		t, err := thumbprint(f)
 		if err != nil {
-			fmt.Fprintln(stderr, "trace-verify:", err)
+			fmt.Fprintln(stderr, "trace-verify-go:", err)
 			return 2
 		}
 		opts.PinnedKeys = append(opts.PinnedKeys, t)
 	}
+	if (*anchorProof == "") != (*anchorEntry == "") {
+		fmt.Fprintln(stderr, "trace-verify-go: -anchor-proof and -anchor-entry go together")
+		return 2
+	}
+	if *anchorProof != "" {
+		opts.Anchor = &record.Anchor{}
+		for _, f := range []struct {
+			path string
+			into *[]byte
+		}{{*anchorProof, &opts.Anchor.Proof}, {*anchorEntry, &opts.Anchor.Entry}} {
+			if *f.into, err = os.ReadFile(f.path); err != nil {
+				fmt.Fprintln(stderr, "trace-verify-go:", err)
+				return 2
+			}
+			*f.into = bytes.TrimSpace(*f.into)
+		}
+	}
 	if *policyDir != "" {
 		if opts.ResolvePolicy, err = policydir.Open(*policyDir); err != nil {
-			fmt.Fprintln(stderr, "trace-verify:", err)
+			fmt.Fprintln(stderr, "trace-verify-go:", err)
 			return 2
 		}
 	}
@@ -100,7 +120,7 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	case 0, 1, 2:
 		res = record.CheckLevel(data, *level, opts)
 	default:
-		fmt.Fprintln(stderr, "trace-verify: -level must be 0, 1 or 2")
+		fmt.Fprintln(stderr, "trace-verify-go: -level must be 0, 1 or 2")
 		return 2
 	}
 
@@ -108,7 +128,7 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		enc := json.NewEncoder(stdout)
 		enc.SetIndent("", "  ")
 		if err := enc.Encode(res); err != nil {
-			fmt.Fprintln(stderr, "trace-verify:", err)
+			fmt.Fprintln(stderr, "trace-verify-go:", err)
 			return 2
 		}
 	} else {

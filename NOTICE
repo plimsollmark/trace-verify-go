@@ -5,3 +5,8 @@ a Series of LF Projects, LLC (https://github.com/agentrust-io/trace-spec and
 https://github.com/agentrust-io/trace-tests), copied unchanged under
 testdata/vectors/. Their sources, revisions and licenses are listed in
 testdata/vectors/PROVENANCE.md.
+
+It also includes registry entries, inclusion proofs and anchored claims from the TRACE
+Registry (https://github.com/agentrust-io/trace-registry), Copyright 2026 AgenTrust
+Contributors, licensed under CC BY 4.0 and copied unchanged under testdata/registry/.
+Their source and revision are listed in testdata/registry/PROVENANCE.md.

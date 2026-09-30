@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/plimsollmark/trace-verify-go/anchor"
 	"github.com/plimsollmark/trace-verify-go/internal/uri"
 	"github.com/plimsollmark/trace-verify-go/jcs"
 	"github.com/plimsollmark/trace-verify-go/jwk"
@@ -599,9 +600,29 @@ var Rules = []Rule{
 		}},
 	{ID: "TR-ANC-002", Suite: "TR-ANC-002", Level: 2, Section: "3.3 step 6; spec/registry-anchor-v1.md", Stage: StageClaims,
 		Check: func(s *state) Finding {
-			// Receipt verification is PLAN.md phase 6. Until then this is reported as
-			// what it is: a check this verifier cannot perform.
-			return unverified("anchor_not_checked", "inclusion-proof verification is not implemented yet (PLAN.md phase 6)")
+			a := s.opts.Anchor
+			if a == nil {
+				return unverified("anchor_receipt_absent", "no inclusion proof and registry entry were supplied")
+			}
+			p, err := anchor.ParseProof(a.Proof)
+			if err != nil {
+				return fail("anchor_receipt_malformed", "inclusion proof: "+err.Error())
+			}
+			e, err := anchor.ParseEntry(a.Entry)
+			if err != nil {
+				return fail("anchor_receipt_malformed", "registry entry: "+err.Error())
+			}
+			// The anchored unit is the complete signed record, signature included, in
+			// the anchor's own canonical form, not the signing one (Anchor Format v1
+			// sections 0 and 1).
+			c, err := anchor.CanonicalValue(s.rec)
+			if err != nil {
+				return fail("anchor_claim_outside_profile", err.Error())
+			}
+			if err := anchor.VerifyLeaf(anchor.LeafHash(c), p, e); err != nil {
+				return fail("anchor_inclusion_failed", err.Error())
+			}
+			return pass()
 		}},
 }
 

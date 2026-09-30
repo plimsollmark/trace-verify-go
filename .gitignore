@@ -1,4 +1,4 @@
-/trace-verify
+/trace-verify-go
 /trace-conformance
 /tmp/
 *.test

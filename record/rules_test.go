@@ -1,21 +1,24 @@
 package record
 
 import (
+	"bytes"
 	"crypto/ed25519"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/plimsollmark/trace-verify-go/anchor"
 	"github.com/plimsollmark/trace-verify-go/jcs"
 	"github.com/plimsollmark/trace-verify-go/jwk"
 )
 
 var testNow = time.Unix(1785000000, 0)
 
-// base is a record meant to pass every check through level 2 except TR-ANC-002, which
-// this verifier cannot perform yet.
+// base is a record meant to pass every check through level 2; TR-ANC-002 also needs the
+// anchor evidence anchorFor builds.
 func base(pub ed25519.PublicKey) map[string]any {
 	return map[string]any{
 		"eat_profile": ProfileV02,
@@ -70,9 +73,10 @@ func build(t *testing.T, edit func(r map[string]any)) []byte {
 func sub(r map[string]any, k string) map[string]any { return r[k].(map[string]any) }
 
 func TestBaseRecordPassesThroughLevel2(t *testing.T) {
-	res := CheckLevel(build(t, nil), 2, Options{Now: testNow, Nonce: "n-1"})
+	rec := build(t, nil)
+	res := CheckLevel(rec, 2, Options{Now: testNow, Nonce: "n-1", Anchor: anchorFor(t, rec)})
 	for _, f := range res.Findings {
-		if f.Status == Fail || (f.Status == Unverified && f.Rule != "TR-ANC-002") {
+		if f.Status == Fail || f.Status == Unverified {
 			t.Errorf("%s: %s %s %s", f.Rule, f.Status, f.Code, f.Detail)
 		}
 	}
@@ -253,5 +257,62 @@ func TestVerifyModeOutcomes(t *testing.T) {
 	}), opts())
 	if r.Outcome != Verified {
 		t.Errorf("imported, software-only: %s %s", r.Outcome, r.Code)
+	}
+}
+
+// anchorFor anchors rec as the middle leaf of a three-leaf batch and returns the proof
+// and the entry, built by the anchor package's own section 3 tree.
+func anchorFor(t *testing.T, rec []byte) *Anchor {
+	t.Helper()
+	c, err := anchor.CanonicalClaimBytes(rec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	a, b := anchor.LeafHash([]byte("a")), anchor.LeafHash([]byte("b"))
+	leaf := anchor.LeafHash(c)
+	root, err := anchor.Root([]anchor.Hash{a, leaf, b})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Leaf 1 of 3: its sibling is leaf 0, then the promoted leaf 2.
+	proof := fmt.Sprintf(`{"leaf_index":1,"audit_path":[%q,%q]}`, a, b)
+	entry := fmt.Sprintf(`{"ts":"2026-09-30T00:00:00Z","merkle_root":%q,"leaf_count":3,"producer":"test","batch_id":"b1"}`, root)
+	return &Anchor{Proof: []byte(proof), Entry: []byte(entry)}
+}
+
+func TestAnchorRule(t *testing.T) {
+	rec := build(t, nil)
+	good := anchorFor(t, rec)
+	finding := func(data []byte, a *Anchor) Finding {
+		t.Helper()
+		f, ok := CheckLevel(data, 2, Options{Now: testNow, Nonce: "n-1", Anchor: a}).Finding("TR-ANC-002")
+		if !ok {
+			t.Fatal("no TR-ANC-002 finding")
+		}
+		return f
+	}
+	if f := finding(rec, good); f.Status != Pass {
+		t.Fatalf("anchored record: %+v", f)
+	}
+	if f := finding(rec, nil); f.Status != Unverified || f.Code != "anchor_receipt_absent" {
+		t.Errorf("no receipt: %+v", f)
+	}
+	// A different, validly signed record against the same proof: anchored bytes differ.
+	if f := finding(build(t, nil), good); f.Status != Fail || f.Code != "anchor_inclusion_failed" {
+		t.Errorf("proof for a different record: %+v", f)
+	}
+	for what, a := range map[string]*Anchor{
+		"missing leaf_index":  {Proof: []byte(`{"audit_path":[]}`), Entry: good.Entry},
+		"non-hex audit node":  {Proof: []byte(`{"leaf_index":1,"audit_path":["sha256:zz"]}`), Entry: good.Entry},
+		"missing merkle_root": {Proof: good.Proof, Entry: []byte(`{"ts":"t","leaf_count":3,"producer":"p","batch_id":"b"}`)},
+		"missing leaf_count":  {Proof: good.Proof, Entry: bytes.Replace(good.Entry, []byte(`"leaf_count":3,`), nil, 1)},
+	} {
+		if f := finding(rec, a); f.Status != Fail || f.Code != "anchor_receipt_malformed" {
+			t.Errorf("%s: %+v", what, f)
+		}
+	}
+	out := &Anchor{Proof: bytes.Replace(good.Proof, []byte(`"leaf_index":1`), []byte(`"leaf_index":3`), 1), Entry: good.Entry}
+	if f := finding(rec, out); f.Status != Fail || f.Code != "anchor_inclusion_failed" {
+		t.Errorf("out-of-range leaf_index: %+v", f)
 	}
 }

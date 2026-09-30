@@ -125,7 +125,7 @@ var Uncovered = map[string]string{
 	"artifact_digest_mismatch":    "every vector's artifact digest matches (the set separates depths, not surface defects); provenance tests cover it",
 	"builder_untrusted":           "every vector's builder is trusted; provenance tests cover it",
 	"dependency_subject_mismatch": "a check this verifier adds (the attestation is for this input's digest); no vector's dependency attestation names another digest; provenance tests cover it",
-	"TR-ANC-002":                  "not implemented until PLAN.md phase 6; it reports unverified, never pass",
+	"TR-ANC-002":                  "no portable vector carries an inclusion proof; anchor tests cover Anchor Format v1 with three anchors from the published registry, and record tests cover the rule",
 	"receipt_structure":           "no action-receipt vector omits a member 3.3.2 lists; receipt tests cover it",
 	"acta decision":               "no Acta vector carries a decision outside allow, deny and rate_limit; acta tests cover it",
 }
