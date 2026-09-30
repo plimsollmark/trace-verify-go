@@ -11,6 +11,7 @@ package references
 
 import (
 	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/hex"
 	"fmt"
 	"strconv"
@@ -74,7 +75,7 @@ var Steps = []Step{
 	{ID: "appraisal_digest", Rel: "condition-appraisal", Section: "3.1.2 digest: SHA-256 of the RFC 8785 form of the object as retained",
 		Run: func(in *Input, f *Findings) {
 			if in.target != nil {
-				f.DigestMatches = yes(digest(in.target) == str(in.Reference, "digest"))
+				f.DigestMatches = matches(in.Reference, in.target)
 			}
 		}},
 	{ID: "appraisal_issuer_key", Rel: "condition-appraisal", Section: "references-registry: an issuer key the relying party holds",
@@ -118,7 +119,7 @@ var Steps = []Step{
 		Run: func(in *Input, f *Findings) {
 			if in.target != nil {
 				env, _ := in.target.Get("envelope")
-				f.DigestMatches = yes(digest(env) == str(in.Reference, "digest"))
+				f.DigestMatches = matches(in.Reference, env)
 			}
 		}},
 	{ID: "approval_chain", Rel: "approval-outcome", Section: "crosswalk step 4: replay the chain and compare the head",
@@ -201,13 +202,29 @@ func ReplayChain(entries []*jcs.Object) string {
 	return prev
 }
 
-func digest(v any) string {
-	b, err := jcs.Encode(v)
-	if err != nil {
-		return ""
+// matches compares a reference's digest with the RFC 8785 form of v, in the algorithm
+// the digest names. The schema makes digest optional ("when the producer holds it at
+// issue time") and admits sha256 and sha384: with none, or with an algorithm this
+// verifier does not compute, nothing is checked (nil), which is neither a match nor a
+// contradiction (3.1.3 rule 3 on unsupported algorithms, read the same way here).
+func matches(ref *jcs.Object, v any) *bool {
+	want := str(ref, "digest")
+	var b []byte
+	switch {
+	case strings.HasPrefix(want, "sha256:"), strings.HasPrefix(want, "sha384:"):
+		var err error
+		if b, err = jcs.Encode(v); err != nil {
+			return yes(false)
+		}
+	default:
+		return nil
+	}
+	if strings.HasPrefix(want, "sha384:") {
+		d := sha512.Sum384(b)
+		return yes(want == "sha384:"+hex.EncodeToString(d[:]))
 	}
 	d := sha256.Sum256(b)
-	return "sha256:" + hex.EncodeToString(d[:])
+	return yes(want == "sha256:"+hex.EncodeToString(d[:]))
 }
 
 func str(o *jcs.Object, name string) string {
