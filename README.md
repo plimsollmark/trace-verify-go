@@ -5,7 +5,7 @@ Records, written from the specification and checked against the TRACE project's
 published test vectors.
 
 262 of 262 judged cases from 216 of the TRACE project's vector files agree. What was
-verified, what was not, and 22 findings about the specification and its vectors:
+verified, what was not, and 26 findings about the specification and its vectors:
 [REPORT.md](REPORT.md). The exact claim: [the conformance statement](docs/conformance-statement.md).
 How it was built, phase by phase: [PLAN.md](PLAN.md).
 

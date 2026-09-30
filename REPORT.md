@@ -5,7 +5,7 @@ contributor outside the TRACE project, and run against the project's own publish
 vectors: 262 of 262 judged cases agree, from 216 vector files, 225 of them against the
 vectors' own expected results and 37 against expectations derived from a file name, a
 set's README or the suite's documented rules, because those vectors state none that a
-v0.2 verifier can use. Writing it surfaced 22 findings about the specification, its
+v0.2 verifier can use. Writing it surfaced 26 findings about the specification, its
 supporting artifacts and the vectors, listed below. The exact claim (revisions, schema
 digest, levels, per-set counts) is the generated
 [conformance statement](docs/conformance-statement.md); every vector's verdict is on the
@@ -84,8 +84,8 @@ They fall into four kinds:
 
 | Kind | Findings |
 |---|---|
-| The normative text is silent or insufficient, and a vector or an implementation decides | 1, 6, 13, 14, 15, 18, 19, 21 |
-| A supporting artifact disagrees with the specification, or with itself | 2, 3, 5, 7, 12, 16, 20 |
+| The normative text is silent or insufficient, and a vector or an implementation decides | 1, 6, 13, 14, 15, 18, 19, 21, 25, 26 |
+| A supporting artifact disagrees with the specification, or with itself | 2, 3, 5, 7, 12, 16, 20, 23, 24 |
 | The vectors cannot show that an implementation performs a rule | 4, 8, 10, 11, 17, 22 |
 | Confirmed from a second implementation | 9 |
 
@@ -254,6 +254,36 @@ They fall into four kinds:
     neither the audit path nor the canonicalization trap section 0 warns about. This
     verifier's tests cover both; a vector set with multi-leaf batches and a non-ASCII
     claim would let a second implementation show it.
+
+23. **The suite's docs disagree on an all-zero measurement.** `docs/levels.md` lists
+    "`runtime.measurement` is all zeros — TR-RTE-002 (all-zero is invalid at Level 1)"
+    among its level 1 failures, and `docs/modules/tr-rte.md` says TR-RTE-002 checks
+    "format only; all-zero values also match this check". Both cannot hold. This verifier
+    follows the module doc (format only), since it is the check's own definition, and a
+    level 1 verifier following `levels.md` would reject a record this one accepts.
+24. **A float spelling of an integer timestamp is a negative case the canonical form
+    cannot see.** `docs/modules/tr-apr.md` lists "a float" among TR-APR-004's negative
+    cases for `appraisal.timestamp`. A non-integral value fails here. An integral value
+    written as a float (`1784999900.0`) is an integer to JSON Schema 2020-12, and RFC 8785
+    serializes it as `1784999900`, so the signed bytes are the same as for the integer
+    and the signature cannot tell the two spellings apart. This verifier accepts it. The
+    suite could say which "a float" means; only the non-integral reading is consistent
+    with 3.2.2.
+25. **Nothing says whether an ECDSA signature with a high S value is accepted.** For an
+    embedded ES256 or ES384 signature, `(r, n - s)` verifies wherever `(r, s)` does, so a
+    third party can produce a second valid signature and with it a second record digest
+    for delegation links (3.1.3). Neither 3.2.2 nor RFC 7518 requires low S, and JWS
+    verifiers generally accept both; this verifier does too. A sentence in 3.2.2 either
+    requiring low S or stating that a link digest is not unique to the signed content
+    would settle it.
+26. **It is unclear how far 3.2.2's integer rule reaches.** "What the rule covers" extends
+    the safe-integer rule to revocation statements and bundles and to "any object whose
+    digest is taken over its canonical form". A Trust Record also cites objects defined
+    elsewhere by an RFC 8785 digest: an Acta decision receipt's envelope, a CHAP decision
+    envelope. Whether TRACE's rule binds those, whose canonicalization their own
+    specifications define, is not said. This verifier applies it to the objects TRACE
+    defines (records, delegation digests, action receipts, GapDisclosures, revocation
+    bundles) and leaves Acta and CHAP objects to plain RFC 8785.
 
 ## Reproducing
 

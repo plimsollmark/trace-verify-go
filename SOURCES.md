@@ -68,6 +68,17 @@ documents listed below, not as files read.
 | file list of the repository at the tag (names only) | 2026-09-30 | whether anchoring vectors exist (none do) |
 | `docs/modules/tr-anc.md` (again) | 2026-09-30 | TR-ANC-002's positive and negative cases |
 
+## Review, 2026-09-30
+
+A review of the whole verifier against the pinned text re-read these in full (no Python,
+no generator, nothing outside these files):
+
+| File | Revision | Why |
+|---|---|---|
+| `spec/trace-v0.2.md` (the whole file), `spec/registry-anchor-v1.md`, `schema/trace-claim.json`, `schema/trace-revocation.json`, `schema/trace-revocation-bundle.json` | trace-spec `63f4d15` | checking every rule's reading; findings 23 to 26 |
+| `docs/rfcs/a2a-delegation-profile.md`, `docs/trust-levels.md`, `docs/crosswalks/acta-decision-receipts.md`, `docs/crosswalks/chap-review-decisions.md` | trace-spec `63f4d15` | the delegation link's shape, issuer pinning, receipt and reference checks |
+| `docs/levels.md`, `docs/error-codes.md`, `docs/modules.md`, `docs/modules/tr-*.md` | trace-tests `v0.6.1` | TR-SIG-005 for an unusable key, the level tables, findings 23 and 24 |
+
 ## trace-registry at `e26b85a4be2507342aeaa2ef927a28ee53c99996`
 
 | File | Date | Why |
