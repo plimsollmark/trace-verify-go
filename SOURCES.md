@@ -39,3 +39,4 @@ documents listed below, not as files read.
 | Document | Date | Why |
 |---|---|---|
 | [RFC 8785](https://www.rfc-editor.org/rfc/rfc8785.txt), sections 3.2 and Appendix B | 2026-09-30 | canonical form; the tests use its samples verbatim |
+| [RFC 8037](https://www.rfc-editor.org/rfc/rfc8037.txt), Appendix A | 2026-09-30 | the Ed25519 JWK, thumbprint and signature the `jwk` tests use |
