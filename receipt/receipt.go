@@ -267,8 +267,18 @@ var Rules = []Rule{
 		}},
 	{ID: "receipt_chain_gap", Section: "3.3.3 item 3 (verify ordering when receipts are hash-chained)",
 		Check: func(s *state) {
-			if s.receipt != nil && s.ctx.ExpectedPrevious != "" && str(s.receipt, "previous_receipt_hash") != s.ctx.ExpectedPrevious {
+			if s.receipt == nil {
+				return
+			}
+			got, chained := s.receipt.Get("previous_receipt_hash")
+			switch {
+			case s.ctx.ExpectedPrevious != "" && str(s.receipt, "previous_receipt_hash") != s.ctx.ExpectedPrevious:
 				s.fail("receipt_chain_gap")
+			case s.ctx.ExpectedPrevious == "" && chained && got != nil:
+				// The receipt is hash-chained but the caller named no predecessor, so its
+				// order was not verified; say so rather than let silence read as a pass
+				// (3.3.3 item 5: report what could not be verified separately).
+				s.warn("receipt_chain_not_checked")
 			}
 		}},
 	{ID: "receipt_stale", Section: "3.3.3 item 5 (stale receipts)",
@@ -336,6 +346,18 @@ func issuedAt(s *state) (time.Time, bool) {
 		return time.Time{}, false
 	}
 	return t, true
+}
+
+// ChainDigest is the value a successor carries in previous_receipt_hash for this
+// receipt or GapDisclosure: SHA-256 over the RFC 8785 form of the whole element,
+// signature included (decided by the vectors; REPORT.md finding 15). It is what a caller
+// passes as Context.ExpectedPrevious when checking the successor.
+func ChainDigest(element []byte) (string, error) {
+	v, err := jcs.Parse(element)
+	if err != nil {
+		return "", err
+	}
+	return digest(v)
 }
 
 // digest is "sha256:" and the lowercase hex SHA-256 of v's RFC 8785 form, under

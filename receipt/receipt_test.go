@@ -172,3 +172,28 @@ func TestGapMalformed(t *testing.T) {
 		t.Fatalf("%+v", r)
 	}
 }
+
+// 3.3.3 item 3: a hash-chained receipt checked with no expected predecessor has not had
+// its order verified, and the result says so instead of passing silently.
+func TestChainedReceiptWithNoExpectedPredecessorWarns(t *testing.T) {
+	in, ctx := fixture(t, nil)
+	ctx.ExpectedPrevious = ""
+	r := Verify(in, ctx)
+	if r.Status != ValidAccepted || !slices.Equal(r.Warnings, []string{"receipt_chain_not_checked"}) {
+		t.Fatalf("%+v", r)
+	}
+	// ChainDigest is what the successor names: a receipt chained to this one checks
+	// against it.
+	d, err := ChainDigest(in.Receipt)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if d != sum(in.Receipt) {
+		t.Fatalf("ChainDigest %s, want %s", d, sum(in.Receipt))
+	}
+	next, nctx := fixture(t, func(r, _ map[string]any) { r["previous_receipt_hash"] = d })
+	nctx.ExpectedPrevious = d
+	if r := Verify(next, nctx); r.Status != ValidAccepted || len(r.Warnings) != 0 {
+		t.Fatalf("successor: %+v", r)
+	}
+}
