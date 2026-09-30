@@ -188,10 +188,12 @@ They fall into four kinds:
     `separate_process` and `gateway_self_report`, and no stated rule for any other (this
     verifier warns on anything but `separate_process`). A receipt exactly
     `max_receipt_age_seconds` old is fresh (vector 25 is one second past it). And every
-    vector carries one defect, so nothing decides what a receipt under an unknown key
-    that also fails a binding check reports (here: `receipt_invalid`), or what an absent
-    receipt that is not required reports (here: `receipt_not_required`, a name of this
-    verifier's own).
+    vector carries one defect, so no vector checks what a receipt under an unknown key
+    that also fails a binding check reports. The text does decide it (3.3.2, "When the
+    issuer key is not configured": "unverified, not invalid"), and this verifier reports
+    `receipt_unverified` with the failure listed; a vector pairing the two defects would
+    let a second implementation show it. Nothing decides what an absent receipt that is
+    not required reports (here: `receipt_not_required`, a name of this verifier's own).
 15. **A disclosure's chain digest has no stated pre-image.** 3.3.4 says a
     `GapDisclosure`'s `previous_receipt_hash` is "computed the same way as on a receipt",
     and no section says how a receipt's digest is computed. All sixteen sealed vectors

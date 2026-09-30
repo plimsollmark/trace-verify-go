@@ -197,3 +197,19 @@ func TestChainedReceiptWithNoExpectedPredecessorWarns(t *testing.T) {
 		t.Fatalf("successor: %+v", r)
 	}
 }
+
+// 3.3.2: a receipt under an unknown key is unverified, not invalid, even when a binding
+// check also fails; the failure is still reported. A malformed receipt stays invalid.
+func TestUnknownKeyWithAFailedBindingIsUnverified(t *testing.T) {
+	in, ctx := fixture(t, func(r, _ map[string]any) { r["linked_call_id"] = "call-2" })
+	ctx.TrustedKeys = nil
+	r := Verify(in, ctx)
+	if r.Status != Unverified || !slices.Equal(r.Failures, []string{"call_id_mismatch"}) || !slices.Contains(r.Warnings, "issuer_key_unknown") {
+		t.Fatalf("%+v", r)
+	}
+	in, ctx = fixture(t, func(r, _ map[string]any) { delete(r, "evidence_type") })
+	ctx.TrustedKeys = nil
+	if r := Verify(in, ctx); r.Status != Invalid {
+		t.Fatalf("malformed under an unknown key: %+v", r)
+	}
+}

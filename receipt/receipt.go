@@ -146,10 +146,18 @@ func VerifyWith(rules []Rule, in Input, ctx Context) Result {
 		res.Status = MissingRequired
 	case s.absent:
 		res.Status = NotRequired
-	case len(s.failures) > 0:
+	case slices.Contains(s.failures, "receipt_malformed"):
+		// Malformed whatever keys the verifier holds.
 		res.Status = Invalid
 	case s.keyUnknown:
+		// 3.3.2, "When the issuer key is not configured": "A receipt whose issuer key is
+		// unknown to the verifier is unverified, not invalid", and the MUST-reject is for
+		// "a verifier configured with the issuer key". Anything else found wrong is in
+		// content no key authenticates; it is still reported, and does not make the
+		// receipt invalid. No vector carries this combination.
 		res.Status = Unverified
+	case len(s.failures) > 0:
+		res.Status = Invalid
 	default:
 		res.Status = ValidRejected
 		if str(s.receipt, "decision") == "accepted" {
