@@ -33,3 +33,9 @@ documents listed below, not as files read.
 | `docs/levels.md`, `docs/error-codes.md` | 2026-09-30 | the named checks and their levels |
 | `docs/modules/tr-sig.md`, `tr-env.md`, `tr-pol.md`, `tr-apr.md` | 2026-09-30 | per-module checks |
 | top-level keys of every `*.json` under `tests/vectors/` (a `jq` survey) | 2026-09-30 | adapter design |
+
+## Standards (not TRACE files; listed so the inputs are complete)
+
+| Document | Date | Why |
+|---|---|---|
+| [RFC 8785](https://www.rfc-editor.org/rfc/rfc8785.txt), sections 3.2 and Appendix B | 2026-09-30 | canonical form; the tests use its samples verbatim |
