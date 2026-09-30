@@ -1,0 +1,17 @@
+{
+  "payload": {
+    "decision": "deny",
+    "issued_at": "2026-09-30T10:00:05.000Z",
+    "issuer_id": "gate:refunds-policy",
+    "policy_digest": "sha256:033eb54ce9fad252fa01b9f0845ba7218b4ffe761c0e109764a69a7a30afe068",
+    "reason": "policy_block",
+    "session_id": "ses_dispute_ORD-123",
+    "tool_name": "refund",
+    "type": "protectmcp:decision"
+  },
+  "signature": {
+    "alg": "EdDSA",
+    "kid": "gate:refunds-policy",
+    "sig": "73747a908016f39af0707ea1d748b9ae98819b233c5ceea6d39fb3a0d308fcfd69335c4ccab12656644cd86ce889b1e90815e403614a39c365b84ade9ce7b400"
+  }
+}

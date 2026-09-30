@@ -1,0 +1,17 @@
+{
+  "payload": {
+    "decision": "allow",
+    "issued_at": "2026-09-30T10:00:09.000Z",
+    "issuer_id": "gate:refunds-policy",
+    "policy_digest": "sha256:033eb54ce9fad252fa01b9f0845ba7218b4ffe761c0e109764a69a7a30afe068",
+    "previousReceiptHash": "ed80603dc71b1ca257c82a162977616b606e8f7e20f4e922a7a4f7d32c3de1cd",
+    "session_id": "ses_dispute_ORD-123",
+    "tool_name": "escalate",
+    "type": "protectmcp:decision"
+  },
+  "signature": {
+    "alg": "EdDSA",
+    "kid": "gate:refunds-policy",
+    "sig": "5e3f3e848f56e62f18110271a60f3a2fc0cb5327fecc90bbce262f8f17dc6fda6d8bd0bc4623a842effeafe6e76e2484f5c9b7f863f66cf365b3edfbd489f20f"
+  }
+}

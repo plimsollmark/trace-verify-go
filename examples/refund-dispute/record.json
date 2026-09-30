@@ -1,0 +1,42 @@
+{
+  "appraisal": {
+    "status": "none",
+    "verifier": "https://verifier.example.com"
+  },
+  "build_provenance": {
+    "digest": "sha256:07a38d8f84c445fe96b48e97a5b6f942e4c57699fcf4854afbe1c77fabc3fb97",
+    "slsa_level": 1
+  },
+  "cnf": {
+    "jwk": {
+      "crv": "Ed25519",
+      "kty": "OKP",
+      "x": "tmgp3sieEMNxojWCls1N3FqT-H4H-kCB1r70ZuCgYjE"
+    }
+  },
+  "data_class": "confidential",
+  "eat_profile": "tag:agentrust-io.com,2026:trace-v0.2",
+  "iat": 1790762410,
+  "model": {
+    "model_id": "support-agent-1",
+    "provider": "example"
+  },
+  "policy": {
+    "bundle_hash": "sha256:033eb54ce9fad252fa01b9f0845ba7218b4ffe761c0e109764a69a7a30afe068",
+    "enforcement_mode": "enforce"
+  },
+  "references": [
+    {
+      "digest": "sha256:0b09cb9b88eb385b857eeab3bf50c9995c1a4087a3b289cded8eef1f6232b80e",
+      "id": "acta-chain/ses_dispute_ORD-123",
+      "rel": "behavior-trace",
+      "resolver": "https://gate.example.com"
+    }
+  ],
+  "runtime": {
+    "measurement": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+    "platform": "software-only"
+  },
+  "signature": "hkcRc4Y4pMIl8XaO5TN9O2kr4GAPtKAYaHUtMCijYRV2AZmIW7NRUtqBr9YU12BMFnrZ52cplXxz9uHl8nJiBw",
+  "subject": "spiffe://support.example.com/agent/refunds"
+}

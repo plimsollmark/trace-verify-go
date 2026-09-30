@@ -30,6 +30,10 @@ key, so the spec's verification reports UNVERIFIED (`issuer_not_authenticated`) 
 1. `-trust-embedded-key` accepts the record's own key instead, for a key established by
 other means; the output still says the issuer was not authenticated.
 
+[examples/refund-dispute](examples/refund-dispute/) is a worked example: a policy gate's
+Acta decision receipts (a refund denied, an escalation allowed, chained) and the agent's
+Trust Record that references them, checked end to end, with three tampering cases.
+
 The conformance page, [docs/conformance.html](docs/conformance.html), shows every
 vector's expected and actual verdict, which rules the vectors can tell apart, and the
 findings from [REPORT.md](REPORT.md).
