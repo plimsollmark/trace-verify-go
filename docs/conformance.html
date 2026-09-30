@@ -45,10 +45,10 @@ ol.findings li { margin: 0 0 10px; max-width: 900px; }
 <div class="pins">Specification and schema: <code>agentrust-io/trace-spec</code> at <code>63f4d1500c24f837bd96a503a09860a49778e5bb</code>, schema SHA-256 <code>44778f700dae0216f18eda482457b1a9363aef8e8f92adb33d152c925781eea6</code>. Suite vectors: <code>agentrust-io/trace-tests</code> <code>v0.6.1</code>.</div>
 
 <div class="tiles">
-  <div class="tile"><div class="n">192 of 192</div><div class="l">vectors with an expectation agree</div></div>
+  <div class="tile"><div class="n">248 of 248</div><div class="l">vectors with an expectation agree</div></div>
   <div class="tile"><div class="n">0</div><div class="l">vectors disagree</div></div>
   <div class="tile"><div class="n">1</div><div class="l">run and shown without a verdict (the vector states none)</div></div>
-  <div class="tile"><div class="n">54 of 81</div><div class="l">rules whose deletion some vector notices</div></div>
+  <div class="tile"><div class="n">80 of 109</div><div class="l">rules whose deletion some vector notices</div></div>
 </div>
 
 <h2>Vector sets</h2>
@@ -61,6 +61,9 @@ ol.findings li { margin: 0 0 10px; max-width: 900px; }
 <tr><td><a href="#set-delegation-link">delegation-link</a></td><td>delegation chains: the parent_record_hash pre-image (spec 3.1.3, normative) and the ten chain rules of the draft a2a-delegation-profile; records arrive in no order and the leaf is named by digest</td><td>48 of 48</td></tr>
 <tr><td><a href="#set-citation-resolution">citation-resolution</a></td><td>what a caller-supplied resolver returned for the URIs a verified record cites: resolved with the digest of the bytes, unresolvable, or not attempted; never a rejection (spec 3.1.2 rule 3)</td><td>16 of 16</td></tr>
 <tr><td><a href="#set-build-provenance-depth">build-provenance-depth</a></td><td>build_provenance verified at surface, builder and transitive depth (spec 3.3.1): each vector passes the depth below it, and the depth it names is the first to say something</td><td>18 of 18</td></tr>
+<tr><td><a href="#set-action-receipts">action-receipts</a></td><td>per-action receipts below a Trust Record (spec 3.3.2, informative 3.3.3): digests recomputed, the issuer key from the pinned set only, call, session and chain binding, freshness, and the receipt result kept apart from the controller outcome</td><td>30 of 30</td></tr>
+<tr><td><a href="#set-gap-disclosure">gap-disclosure</a></td><td>the GapDisclosure chain element (spec 3.3.4): spliced from both directions, signed by the chain&#39;s key, bound to its stream; the live tail is unverified, never disclosed or invalid</td><td>20 of 20</td></tr>
+<tr><td><a href="#set-acta">acta</a></td><td>Acta decision receipts as a second action-receipt profile (docs/crosswalks/acta-decision-receipts.md): the signature gates chain position, policy freshness and session binding, each a separate check</td><td>6 of 6</td></tr>
 <tr><td><a href="#set-condition-appraisal">condition-appraisal</a></td><td>a condition-appraisal reference resolved against the resolver&#39;s store: digest, the issuer&#39;s signature under a key the relying party holds, and the finding reported without promotion; the record verifies whatever the reference does (spec 3.1.2 rule 3)</td><td>5 of 5</td></tr>
 <tr><td><a href="#set-chap-approval-outcome">chap-approval-outcome</a></td><td>an approval-outcome reference to a CHAP review decision: the envelope digest, the CHAP audit chain replayed to its exported head, and whether the decision is an approval</td><td>4 of 4</td></tr>
 <tr><td><a href="#set-reproducibility-claim">reproducibility-claim</a></td><td>the shape of the reproducibility claim and its re-execution result (spec 3.1.4), and the claim&#39;s digests recomputed from the vector&#39;s own context</td><td>21 of 21</td></tr>
@@ -71,7 +74,7 @@ ol.findings li { margin: 0 0 10px; max-width: 900px; }
 
 <h2 id="findings">Findings for the TRACE project</h2>
 <p class="small">From <code>PLAN.md</code>, where they are kept. Each is something a second implementation surfaced about the specification, the schema or the suite.</p>
-<ol class="findings"><li><strong>Embedded EC signatures have no stated encoding.</strong> 3.2.1 allows ES256 and ES384 for JWT contexts, and 3.2.2 defines the embedded <code>signature</code> as &#34;base64url, no padding&#34; over the canonical form, without saying whether an EC signature is raw <code>r || s</code> (as JWS uses) or DER. The suite verifies Ed25519 only (its TR-SIG-004 note), so no vector decides it. This verifier will accept Ed25519 and raw <code>r || s</code> for EC, state that choice, and ask.</li><li><strong>The suite&#39;s schema copy lags the spec&#39;s.</strong> <code>trace-tests/schemas/trace-claim.json</code> (SHA-256 <code>eed7f89e...</code>) lacks the spec schema&#39;s <code>canonicalizableValue</code> definition, which holds members a <code>cnf.jwk</code> may carry beyond the named ones to the safe-integer domain that 3.2.2 requires of &#34;every member&#34;. A record with such a member passes the suite&#39;s schema and fails the spec&#39;s.</li><li><strong>The verifier-compatibility README is behind the spec.</strong> It opens &#34;No normative text for them has been accepted&#34;, but spec 3.3 at the pinned commit carries that text (marked <code>CHANGED: #116</code>). The vectors and the spec agree; only the README is stale.</li><li><strong>Two of the verifier-compatibility refusals are not load-bearing for the rule they name.</strong> Vector 06 (empty accepted set) and vectors 07 and 11 (absent or empty profile) are refused by the plain membership check whether or not a verifier implements the specific rule, because an empty set and an absent profile both fail membership. Since the set makes <code>failure</code> informative, deleting either specific rule here changes no verdict. The vectors still test the outcome that matters (&#34;empty means nothing, never anything&#34;); what they cannot show is that the specific rule exists. This is the non-load-bearing case the suite&#39;s <code>conformance-method.md</code> describes, observed from a second implementation.</li><li><strong>The suite&#39;s docs are narrower than the schema on two digests.</strong> <code>TR-SCA-002</code> and <code>TR-TXN-001</code> are documented as <code>sha256:</code> only; the schema admits <code>sha384:</code> for <code>build_provenance.digest</code> and <code>tool_transcript.hash</code>. This verifier follows the schema, since the spec makes a disagreeing supporting artifact the defect.</li><li><strong>cMCP envelopes cannot be verified from the TRACE spec alone.</strong> 3.2.2 says only &#34;cMCP&#39;s RuntimeClaim (signature over the canonical record, key in trace.cnf.jwk)&#34;, without saying which object is the canonical record, and the suite&#39;s <code>valid_cmcp_runtime.json</code> carries a 20-character signature, which cannot be an Ed25519 signature under any reading. This verifier does not implement the cMCP envelope; the vector is run and reported without a verdict.</li><li><strong><code>valid_openshell_import.json</code> is invalid by the suite&#39;s own documented rule.</strong> Its <code>appraisal.verifier</code> is <code>nvidia-openshell/0.3.0</code>, which <code>docs/modules/tr-apr.md</code> gives, word for word, as the negative case for <code>TR-APR-002</code> (&#34;no scheme&#34;), and the schema requires <code>format: uri</code>. Either the file name or the record is wrong; this verifier rejects it. It is the shape of a record imported from NVIDIA OpenShell.</li><li><strong>The portable vectors distinguish few of the suite&#39;s named checks.</strong> Deleting a check from this verifier changes some vector&#39;s verdict for only <code>TR-ENV-001</code>, <code>TR-SIG-004</code>, <code>TR-SIG-005</code>, <code>TR-POL-003</code> and <code>TR-APR-002</code> (plus the spec-level rules). Of the other twenty named checks, nineteen are implemented here and are either subsumed by schema validation or have no JSON vector carrying their defect (the twentieth, <code>TR-ANC-002</code>, is phase 6), so a second implementation cannot show from the vectors alone that it performs them. The suite&#39;s own docs already list positive and negative cases for each (this repository runs them in <code>record/rules_test.go</code>); published as vectors, they would close the gap.</li><li><strong>The delegation corpus holds up from a second implementation.</strong> Written from the draft profile without its reference walk, this verifier agrees with all 24 vectors in the published record order and reversed, and deleting any one of the ten rules changes exactly its own two vectors. The corpus&#39;s claim of two load-bearing vectors per rule is confirmed independently, which is the measurement the profile&#39;s section 7 asks for.</li><li><strong>No revocation vector has a validly EC-signed bundle.</strong> Vectors 21 and 22 expect <code>bundle_signature_unsupported</code> for <code>ES256</code> and <code>ES384</code>, both of which the bundle schema admits. This verifier implements both and still agrees, because the trusted bundle key in those vectors is Ed25519, so the algorithm cannot fit the key. The set cannot tell &#34;not implemented&#34; from &#34;does not match the key&#34;, and a verifier that refused every EC bundle would pass it.</li><li><strong>Two build-provenance rules have a margin of one vector.</strong> The set promises &#34;two vectors per boundary, on two different defects&#34;, and meets it per boundary. Per rule it does not: deleting <code>dependency_attestation_missing</code> or <code>dependency_publisher_untrusted</code> from this verifier changes one vector each (04 and 05). By the two-per-rule floor the suite applies elsewhere (#124), those rules are under-covered. This verifier also checks that a dependency&#39;s attestation is for that dependency&#39;s digest, which no vector exercises. And the vectors carry pre-verified statements, so the SLSA attestation signature that 3.3.1 requires at builder depth is out of their reach and out of this package&#39;s.</li><li><strong>Two citation-resolution evidence values are one implementation&#39;s prose.</strong> An unresolvable citation&#39;s evidence is <code>exception: &#34;KeyError&#34;</code>, a Python exception class, and the deferred transparency row&#39;s <code>reason</code> is a pointer into the suite&#39;s issue tracker. The README says a consumer may report more keys, &#34;never different values for these&#34;, which a second implementation can meet only by copying the strings. This verifier reports its own <code>error</code> and <code>reason</code> and compares every other evidence value exactly. Separately, with no resolver a surface whose field is absent is reported <code>no_resolver</code> rather than <code>field_absent</code>: vectors 01, 06 and 11 decide that precedence, and the README&#39;s outcome table does not state it.</li><li><strong>Two CHAP details are decided by the data, not the crosswalk.</strong> The crosswalk gives the audit chain link as <code>sha256(JCS(envelope) || prev_hash)</code> without saying whether <code>prev_hash</code> enters as the ASCII of its <code>sha256:&lt;hex&gt;</code> form or as the raw 32 bytes; only the ASCII reading reproduces the exported chain head. And a reference <code>id</code> of <code>audit/9</code> names the entry with <code>seq</code> 9, a convention the vectors use and the crosswalk does not state.</li></ol>
+<ol class="findings"><li><strong>Embedded EC signatures have no stated encoding.</strong> 3.2.1 allows ES256 and ES384 for JWT contexts, and 3.2.2 defines the embedded <code>signature</code> as &#34;base64url, no padding&#34; over the canonical form, without saying whether an EC signature is raw <code>r || s</code> (as JWS uses) or DER. The suite verifies Ed25519 only (its TR-SIG-004 note), so no vector decides it. This verifier will accept Ed25519 and raw <code>r || s</code> for EC, state that choice, and ask.</li><li><strong>The suite&#39;s schema copy lags the spec&#39;s.</strong> <code>trace-tests/schemas/trace-claim.json</code> (SHA-256 <code>eed7f89e...</code>) lacks the spec schema&#39;s <code>canonicalizableValue</code> definition, which holds members a <code>cnf.jwk</code> may carry beyond the named ones to the safe-integer domain that 3.2.2 requires of &#34;every member&#34;. A record with such a member passes the suite&#39;s schema and fails the spec&#39;s.</li><li><strong>The verifier-compatibility README is behind the spec.</strong> It opens &#34;No normative text for them has been accepted&#34;, but spec 3.3 at the pinned commit carries that text (marked <code>CHANGED: #116</code>). The vectors and the spec agree; only the README is stale.</li><li><strong>Two of the verifier-compatibility refusals are not load-bearing for the rule they name.</strong> Vector 06 (empty accepted set) and vectors 07 and 11 (absent or empty profile) are refused by the plain membership check whether or not a verifier implements the specific rule, because an empty set and an absent profile both fail membership. Since the set makes <code>failure</code> informative, deleting either specific rule here changes no verdict. The vectors still test the outcome that matters (&#34;empty means nothing, never anything&#34;); what they cannot show is that the specific rule exists. This is the non-load-bearing case the suite&#39;s <code>conformance-method.md</code> describes, observed from a second implementation.</li><li><strong>The suite&#39;s docs are narrower than the schema on two digests.</strong> <code>TR-SCA-002</code> and <code>TR-TXN-001</code> are documented as <code>sha256:</code> only; the schema admits <code>sha384:</code> for <code>build_provenance.digest</code> and <code>tool_transcript.hash</code>. This verifier follows the schema, since the spec makes a disagreeing supporting artifact the defect.</li><li><strong>cMCP envelopes cannot be verified from the TRACE spec alone.</strong> 3.2.2 says only &#34;cMCP&#39;s RuntimeClaim (signature over the canonical record, key in trace.cnf.jwk)&#34;, without saying which object is the canonical record, and the suite&#39;s <code>valid_cmcp_runtime.json</code> carries a 20-character signature, which cannot be an Ed25519 signature under any reading. This verifier does not implement the cMCP envelope; the vector is run and reported without a verdict.</li><li><strong><code>valid_openshell_import.json</code> is invalid by the suite&#39;s own documented rule.</strong> Its <code>appraisal.verifier</code> is <code>nvidia-openshell/0.3.0</code>, which <code>docs/modules/tr-apr.md</code> gives, word for word, as the negative case for <code>TR-APR-002</code> (&#34;no scheme&#34;), and the schema requires <code>format: uri</code>. Either the file name or the record is wrong; this verifier rejects it. It is the shape of a record imported from NVIDIA OpenShell.</li><li><strong>The portable vectors distinguish few of the suite&#39;s named checks.</strong> Deleting a check from this verifier changes some vector&#39;s verdict for only <code>TR-ENV-001</code>, <code>TR-SIG-004</code>, <code>TR-SIG-005</code>, <code>TR-POL-003</code> and <code>TR-APR-002</code> (plus the spec-level rules). Of the other twenty named checks, nineteen are implemented here and are either subsumed by schema validation or have no JSON vector carrying their defect (the twentieth, <code>TR-ANC-002</code>, is phase 6), so a second implementation cannot show from the vectors alone that it performs them. The suite&#39;s own docs already list positive and negative cases for each (this repository runs them in <code>record/rules_test.go</code>); published as vectors, they would close the gap.</li><li><strong>The delegation corpus holds up from a second implementation.</strong> Written from the draft profile without its reference walk, this verifier agrees with all 24 vectors in the published record order and reversed, and deleting any one of the ten rules changes exactly its own two vectors. The corpus&#39;s claim of two load-bearing vectors per rule is confirmed independently, which is the measurement the profile&#39;s section 7 asks for.</li><li><strong>No revocation vector has a validly EC-signed bundle.</strong> Vectors 21 and 22 expect <code>bundle_signature_unsupported</code> for <code>ES256</code> and <code>ES384</code>, both of which the bundle schema admits. This verifier implements both and still agrees, because the trusted bundle key in those vectors is Ed25519, so the algorithm cannot fit the key. The set cannot tell &#34;not implemented&#34; from &#34;does not match the key&#34;, and a verifier that refused every EC bundle would pass it.</li><li><strong>Two build-provenance rules have a margin of one vector.</strong> The set promises &#34;two vectors per boundary, on two different defects&#34;, and meets it per boundary. Per rule it does not: deleting <code>dependency_attestation_missing</code> or <code>dependency_publisher_untrusted</code> from this verifier changes one vector each (04 and 05). By the two-per-rule floor the suite applies elsewhere (#124), those rules are under-covered. This verifier also checks that a dependency&#39;s attestation is for that dependency&#39;s digest, which no vector exercises. And the vectors carry pre-verified statements, so the SLSA attestation signature that 3.3.1 requires at builder depth is out of their reach and out of this package&#39;s.</li><li><strong>Two citation-resolution evidence values are one implementation&#39;s prose.</strong> An unresolvable citation&#39;s evidence is <code>exception: &#34;KeyError&#34;</code>, a Python exception class, and the deferred transparency row&#39;s <code>reason</code> is a pointer into the suite&#39;s issue tracker. The README says a consumer may report more keys, &#34;never different values for these&#34;, which a second implementation can meet only by copying the strings. This verifier reports its own <code>error</code> and <code>reason</code> and compares every other evidence value exactly. Separately, with no resolver a surface whose field is absent is reported <code>no_resolver</code> rather than <code>field_absent</code>: vectors 01, 06 and 11 decide that precedence, and the README&#39;s outcome table does not state it.</li><li><strong>Two CHAP details are decided by the data, not the crosswalk.</strong> The crosswalk gives the audit chain link as <code>sha256(JCS(envelope) || prev_hash)</code> without saying whether <code>prev_hash</code> enters as the ASCII of its <code>sha256:&lt;hex&gt;</code> form or as the raw 32 bytes; only the ASCII reading reproduces the exported chain head. And a reference <code>id</code> of <code>audit/9</code> names the entry with <code>seq</code> 9, a convention the vectors use and the crosswalk does not state.</li><li><strong>Five action-receipt behaviours are decided by the vectors, not the text.</strong> The <code>decision</code> vocabulary is <code>accepted</code> and <code>rejected</code> byte for byte (vectors 16 and 30), listed nowhere. The controller outcome is the evidence&#39;s <code>terminal_state</code>, not the receipt&#39;s <code>decision</code>: vector 02 signs <code>decision: &#34;rejected&#34;</code> over <code>terminal_state: &#34;aborted&#34;</code> and expects <code>aborted</code>. <code>issuer_independence</code> has two values in use, <code>separate_process</code> and <code>gateway_self_report</code>, and no stated rule for any other (this verifier warns on anything but <code>separate_process</code>). A receipt exactly <code>max_receipt_age_seconds</code> old is fresh (vector 25 is one second past it). And every vector carries one defect, so nothing decides what a receipt under an unknown key that also fails a binding check reports (here: <code>receipt_invalid</code>), or what an absent receipt that is not required reports (here: <code>receipt_not_required</code>, a name of this verifier&#39;s own).</li><li><strong>A disclosure&#39;s chain digest has no stated pre-image.</strong> 3.3.4 says a <code>GapDisclosure</code>&#39;s <code>previous_receipt_hash</code> is &#34;computed the same way as on a receipt&#34;, and no section says how a receipt&#39;s digest is computed. All sixteen sealed vectors agree on SHA-256 over the RFC 8785 form of the whole element, signature included, which is also what the Acta crosswalk states for its own chain (Acta s5.7). One sentence in 3.3.3 would fix the pre-image for both.</li><li><strong>The Acta profile&#39;s documents point at v0.1.</strong> Its README and <code>docs/crosswalks/acta-decision-receipts.md</code> link <code>spec/trace-v0.1.md#332-action-receipts-for-embodied-workflows-informative</code>; at the pinned commit the section is 3.3.3 of <code>trace-v0.2.md</code>, and 3.3.2 is external execution evidence. The signature encoding (lowercase hex, where the embodied profile uses base64url) is stated in neither document and decided by the fixtures.</li><li><strong>The gap-disclosure policy bound has no vector.</strong> 3.3.4 makes acceptance of <code>receipt_gap_disclosed</code> a verifier policy input, with one non-negotiable bound: a profile requiring proven completeness never accepts it. The vectors assert the status only, so a verifier that let a policy setting accept a disclosed gap as complete passes all twenty. This verifier takes the policy as input and tests the bound (<code>receipt/receipt_test.go</code>); a vector pair with a policy field in <code>context</code> would make it portable.</li></ol>
 
 <h2 id="rules">Which rules the vectors can tell apart</h2>
 <p class="small">Each rule is deleted in turn and the vectors are re-run: the bar is the number of vectors whose verdict changes. A rule no vector notices could be missing from an implementation that still passes every vector; the reason column says why, and where this repository tests it instead.</p>
@@ -239,6 +242,62 @@ ol.findings li { margin: 0 0 10px; max-width: 900px; }
 <td><span class="bar" style="width:9px"></span>4</td><td class="small">a2a-delegation-profile D-8</td></tr>
 <tr><td class="nowrap"><code>data_class_widened</code></td><td>chain</td><td class="nowrap"></td><td>0</td>
 <td><span class="bar" style="width:9px"></span>4</td><td class="small">a2a-delegation-profile D-9</td></tr>
+<tr><td class="nowrap"><code>receipt_missing</code></td><td>receipt</td><td class="nowrap"></td><td>0</td>
+<td><span class="bar" style="width:5px"></span>2</td><td class="small">3.3.3 item 5 (report missing receipts separately)</td></tr>
+<tr><td class="nowrap"><code>receipt_structure</code></td><td>receipt</td><td class="nowrap"></td><td>0</td>
+<td><span class="bar zero" style="width:2px"></span>0<br><span class="small">no action-receipt vector omits a member 3.3.2 lists; receipt tests cover it</span></td><td class="small">3.3.2 (a receipt is characterized by issuer, issuer_key_id, signature, evidence_hash, evidence_type, linked_call_id)</td></tr>
+<tr><td class="nowrap"><code>action_ref_invalid</code></td><td>receipt</td><td class="nowrap"></td><td>0</td>
+<td><span class="bar" style="width:5px"></span>2</td><td class="small">3.3.3 item 1 (recompute the action digest from the canonical action preimage)</td></tr>
+<tr><td class="nowrap"><code>action_ref_mismatch</code></td><td>receipt</td><td class="nowrap"></td><td>0</td>
+<td><span class="bar" style="width:5px"></span>2</td><td class="small">3.3.3 item 4 (the receipt binds back to the transcript entry)</td></tr>
+<tr><td class="nowrap"><code>evidence_hash_mismatch</code></td><td>receipt</td><td class="nowrap"></td><td>0</td>
+<td><span class="bar" style="width:5px"></span>2</td><td class="small">3.3.2 (evidence_hash is a content digest); 3.3.3 item 1</td></tr>
+<tr><td class="nowrap"><code>issuer_key_unknown</code></td><td>receipt</td><td class="nowrap"></td><td>0</td>
+<td><span class="bar" style="width:9px"></span>4</td><td class="small">3.3.2 (&#34;When the issuer key is not configured&#34;: unverified, not invalid, with an advisory)</td></tr>
+<tr><td class="nowrap"><code>signature_or_key_mismatch</code></td><td>receipt</td><td class="nowrap"></td><td>0</td>
+<td><span class="bar" style="width:5px"></span>2</td><td class="small">3.3.2 verification rule steps 1 and 2 (JCS of the receipt without signature, verified with the configured key)</td></tr>
+<tr><td class="nowrap"><code>call_id_mismatch</code></td><td>receipt</td><td class="nowrap"></td><td>0</td>
+<td><span class="bar" style="width:5px"></span>2</td><td class="small">3.3.2 verification rule step 3 (linked_call_id equals the entry&#39;s call_id)</td></tr>
+<tr><td class="nowrap"><code>session_id_mismatch</code></td><td>receipt</td><td class="nowrap"></td><td>0</td>
+<td><span class="bar" style="width:5px"></span>2</td><td class="small">3.3.3 item 4 (binds back to the TRACE session)</td></tr>
+<tr><td class="nowrap"><code>receipt_chain_gap</code></td><td>receipt</td><td class="nowrap"></td><td>0</td>
+<td><span class="bar" style="width:5px"></span>2</td><td class="small">3.3.3 item 3 (verify ordering when receipts are hash-chained)</td></tr>
+<tr><td class="nowrap"><code>receipt_stale</code></td><td>receipt</td><td class="nowrap"></td><td>0</td>
+<td><span class="bar" style="width:5px"></span>2</td><td class="small">3.3.3 item 5 (stale receipts)</td></tr>
+<tr><td class="nowrap"><code>receipt_from_future</code></td><td>receipt</td><td class="nowrap"></td><td>0</td>
+<td><span class="bar" style="width:5px"></span>2</td><td class="small">3.3.3 item 5 (an upper bound on age never rejects a receipt issued after the verification time)</td></tr>
+<tr><td class="nowrap"><code>decision_invalid</code></td><td>receipt</td><td class="nowrap"></td><td>0</td>
+<td><span class="bar" style="width:5px"></span>2</td><td class="small">3.3.3 (acceptance and rejection are the two controller decisions a receipt reports)</td></tr>
+<tr><td class="nowrap"><code>unsupported_physical_completion_claim</code></td><td>receipt</td><td class="nowrap"></td><td>0</td>
+<td><span class="bar" style="width:5px"></span>2</td><td class="small">3.3.3 (an acceptance is not proof of physical completion unless the verifier is configured to trust that claim)</td></tr>
+<tr><td class="nowrap"><code>issuer_not_independent</code></td><td>receipt</td><td class="nowrap"></td><td>0</td>
+<td><span class="bar" style="width:5px"></span>2</td><td class="small">3.3.3 (outcome evidence belongs to an external issuer); README fixtures 08 and 29</td></tr>
+<tr><td class="nowrap"><code>disclosure_type_unsupported</code></td><td>gap</td><td class="nowrap"></td><td>0</td>
+<td><span class="bar" style="width:5px"></span>2</td><td class="small">3.3.4 Structure (type, the value GapDisclosure/1.0)</td></tr>
+<tr><td class="nowrap"><code>disclosure_key_unknown</code></td><td>gap</td><td class="nowrap"></td><td>0</td>
+<td><span class="bar" style="width:9px"></span>4</td><td class="small">3.3.4 via 3.3.2 (an unknown issuer key is unverified, not invalid)</td></tr>
+<tr><td class="nowrap"><code>disclosure_signature_invalid</code></td><td>gap</td><td class="nowrap"></td><td>0</td>
+<td><span class="bar" style="width:5px"></span>2</td><td class="small">3.3.4 Structure (signature over the canonical form with the signature field removed)</td></tr>
+<tr><td class="nowrap"><code>disclosure_stream_mismatch</code></td><td>gap</td><td class="nowrap"></td><td>0</td>
+<td><span class="bar" style="width:5px"></span>2</td><td class="small">3.3.4 Stream binding (MUST reject a session_id that does not match the stream)</td></tr>
+<tr><td class="nowrap"><code>disclosure_issuer_not_chain_key</code></td><td>gap</td><td class="nowrap"></td><td>0</td>
+<td><span class="bar" style="width:5px"></span>2</td><td class="small">3.3.4 Issuer (the predecessor&#39;s key or an ancestor of it, whether or not another key is trusted)</td></tr>
+<tr><td class="nowrap"><code>disclosure_predecessor_absent</code></td><td>gap</td><td class="nowrap"></td><td>0</td>
+<td><span class="bar" style="width:5px"></span>2</td><td class="small">3.3.4 Chain binding (previous_receipt_hash MUST name a chain element that is present)</td></tr>
+<tr><td class="nowrap"><code>disclosure_not_sealed_by_successor</code></td><td>gap</td><td class="nowrap"></td><td>0</td>
+<td><span class="bar" style="width:10px"></span>5</td><td class="small">3.3.4 Chain binding (the next element MUST name the disclosure) and the live-tail rule</td></tr>
+<tr><td class="nowrap"><code>disclosure_contradicted</code></td><td>gap</td><td class="nowrap"></td><td>0</td>
+<td><span class="bar" style="width:5px"></span>2</td><td class="small">3.3.4 Verifier outcomes (a claimed gap contradicted by elements that are present)</td></tr>
+<tr><td class="nowrap"><code>acta signature</code></td><td>acta</td><td class="nowrap"></td><td>0</td>
+<td><span class="bar" style="width:12px"></span>6</td><td class="small">crosswalk obligations 1 to 3 (Acta s2.2, s4.1, s5.6)</td></tr>
+<tr><td class="nowrap"><code>acta chain</code></td><td>acta</td><td class="nowrap"></td><td>0</td>
+<td><span class="bar" style="width:5px"></span>2</td><td class="small">crosswalk obligation 5 (Acta s5.7: bare lowercase hex SHA-256 of the predecessor&#39;s entire envelope, signature included)</td></tr>
+<tr><td class="nowrap"><code>acta policy_freshness</code></td><td>acta</td><td class="nowrap"></td><td>0</td>
+<td><span class="bar" style="width:10px"></span>5</td><td class="small">crosswalk, the sixth check (policy_digest against the bundle in force)</td></tr>
+<tr><td class="nowrap"><code>acta session_binding</code></td><td>acta</td><td class="nowrap"></td><td>0</td>
+<td><span class="bar" style="width:10px"></span>5</td><td class="small">crosswalk obligation 4 (session_id against the surrounding context)</td></tr>
+<tr><td class="nowrap"><code>acta decision</code></td><td>acta</td><td class="nowrap"></td><td>0</td>
+<td><span class="bar zero" style="width:2px"></span>0<br><span class="small">no Acta vector carries a decision outside allow, deny and rate_limit; acta tests cover it</span></td><td class="small">crosswalk, &#34;decision is allow, deny, or rate_limit&#34;</td></tr>
 </table></div>
 
 <h2>Every vector</h2>
@@ -579,6 +638,186 @@ ol.findings li { margin: 0 0 10px; max-width: 900px; }
 <td><span class="st agree">✓ agrees</span>
 </td></tr>
 <tr><td class="file">06-builder-accepts-resolved-dependencies-absent.json#transitive</td><td>accept</td><td>accept</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+</table></div>
+<h3 id="set-action-receipts">action-receipts <span class="small">trace-spec/examples/action-receipts/conformance</span></h3>
+<div class="wrap"><table>
+<tr><th>Vector</th><th>Expected</th><th>This verifier</th><th>Result</th></tr>
+<tr><td class="file">01-valid-controller-accepted.json</td><td>receipt_valid_accepted</td><td>receipt_valid_accepted</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">02-valid-controller-rejected.json</td><td>receipt_valid_rejected</td><td>receipt_valid_rejected</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">03-missing-required-receipt.json</td><td>receipt_missing_required (receipt_missing)</td><td>receipt_missing_required (receipt_missing)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">04-signature-key-mismatch.json</td><td>receipt_invalid (signature_or_key_mismatch)</td><td>receipt_invalid (signature_or_key_mismatch)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">05-action-ref-mismatch.json</td><td>receipt_invalid (action_ref_mismatch)</td><td>receipt_invalid (action_ref_mismatch)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">06-stale-receipt.json</td><td>receipt_invalid (receipt_stale)</td><td>receipt_invalid (receipt_stale)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">07-receipt-chain-gap.json</td><td>receipt_invalid (receipt_chain_gap)</td><td>receipt_invalid (receipt_chain_gap)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">08-same-party-self-report.json</td><td>receipt_valid_accepted</td><td>receipt_valid_accepted</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">09-unsupported-physical-completion.json</td><td>receipt_invalid (unsupported_physical_completion_claim)</td><td>receipt_invalid (unsupported_physical_completion_claim)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">10-action-ref-not-recomputable.json</td><td>receipt_invalid (action_ref_invalid)</td><td>receipt_invalid (action_ref_invalid)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">11-call-id-mismatch.json</td><td>receipt_invalid (call_id_mismatch)</td><td>receipt_invalid (call_id_mismatch)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">12-session-id-mismatch.json</td><td>receipt_invalid (session_id_mismatch)</td><td>receipt_invalid (session_id_mismatch)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">13-evidence-hash-mismatch.json</td><td>receipt_invalid (evidence_hash_mismatch)</td><td>receipt_invalid (evidence_hash_mismatch)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">14-receipt-issuer-key-unknown.json</td><td>receipt_unverified</td><td>receipt_unverified</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">15-receipt-from-future.json</td><td>receipt_invalid (receipt_from_future)</td><td>receipt_invalid (receipt_from_future)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">16-decision-not-in-enum.json</td><td>receipt_invalid (decision_invalid)</td><td>receipt_invalid (decision_invalid)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">17-missing-receipt-explicit-null.json</td><td>receipt_missing_required (receipt_missing)</td><td>receipt_missing_required (receipt_missing)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">18-action-ref-tail-forged.json</td><td>receipt_invalid (action_ref_invalid)</td><td>receipt_invalid (action_ref_invalid)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">19-action-ref-mismatch-in-tail.json</td><td>receipt_invalid (action_ref_mismatch)</td><td>receipt_invalid (action_ref_mismatch)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">20-call-id-case-mismatch.json</td><td>receipt_invalid (call_id_mismatch)</td><td>receipt_invalid (call_id_mismatch)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">21-session-id-case-mismatch.json</td><td>receipt_invalid (session_id_mismatch)</td><td>receipt_invalid (session_id_mismatch)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">22-evidence-hash-mismatch-in-tail.json</td><td>receipt_invalid (evidence_hash_mismatch)</td><td>receipt_invalid (evidence_hash_mismatch)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">23-receipt-issuer-key-case-variant.json</td><td>receipt_unverified</td><td>receipt_unverified</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">24-receipt-signature-malformed.json</td><td>receipt_invalid (signature_or_key_mismatch)</td><td>receipt_invalid (signature_or_key_mismatch)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">25-stale-receipt-boundary.json</td><td>receipt_invalid (receipt_stale)</td><td>receipt_invalid (receipt_stale)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">26-receipt-from-future-boundary.json</td><td>receipt_invalid (receipt_from_future)</td><td>receipt_invalid (receipt_from_future)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">27-receipt-chain-gap-in-tail.json</td><td>receipt_invalid (receipt_chain_gap)</td><td>receipt_invalid (receipt_chain_gap)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">28-physical-completion-claim-case.json</td><td>receipt_invalid (unsupported_physical_completion_claim)</td><td>receipt_invalid (unsupported_physical_completion_claim)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">29-same-party-self-report-rejected.json</td><td>receipt_valid_rejected</td><td>receipt_valid_rejected</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">30-decision-case-variant.json</td><td>receipt_invalid (decision_invalid)</td><td>receipt_invalid (decision_invalid)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+</table></div>
+<h3 id="set-gap-disclosure">gap-disclosure <span class="small">trace-spec/examples/action-receipts/gap-disclosure</span></h3>
+<div class="wrap"><table>
+<tr><th>Vector</th><th>Expected</th><th>This verifier</th><th>Result</th></tr>
+<tr><td class="file">01-gap-disclosed-valid.json</td><td>receipt_gap_disclosed</td><td>receipt_gap_disclosed</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">02-gap-disclosure-dangling-predecessor.json</td><td>receipt_invalid (disclosure_predecessor_absent)</td><td>receipt_invalid (disclosure_predecessor_absent)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">03-gap-disclosure-successor-does-not-link.json</td><td>receipt_invalid (disclosure_not_sealed_by_successor)</td><td>receipt_invalid (disclosure_not_sealed_by_successor)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">04-gap-disclosure-contradicted.json</td><td>receipt_invalid (disclosure_contradicted)</td><td>receipt_invalid (disclosure_contradicted)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">05-gap-disclosure-foreign-key.json</td><td>receipt_invalid (disclosure_issuer_not_chain_key)</td><td>receipt_invalid (disclosure_issuer_not_chain_key)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">06-gap-disclosed-parent-key-null-estimate.json</td><td>receipt_gap_disclosed</td><td>receipt_gap_disclosed</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">07-gap-disclosure-unknown-key.json</td><td>gap_disclosure_unverified</td><td>gap_disclosure_unverified</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">08-gap-disclosure-tampered.json</td><td>receipt_invalid (disclosure_signature_invalid)</td><td>receipt_invalid (disclosure_signature_invalid)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">09-gap-disclosure-key-case-variant.json</td><td>gap_disclosure_unverified</td><td>gap_disclosure_unverified</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">10-gap-disclosure-signature-malformed.json</td><td>receipt_invalid (disclosure_signature_invalid)</td><td>receipt_invalid (disclosure_signature_invalid)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">11-gap-disclosure-confusable-ancestor-key.json</td><td>receipt_invalid (disclosure_issuer_not_chain_key)</td><td>receipt_invalid (disclosure_issuer_not_chain_key)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">12-gap-disclosure-replayed-stream.json</td><td>receipt_invalid (disclosure_stream_mismatch)</td><td>receipt_invalid (disclosure_stream_mismatch)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">13-gap-disclosure-stream-case-variant.json</td><td>receipt_invalid (disclosure_stream_mismatch)</td><td>receipt_invalid (disclosure_stream_mismatch)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">14-gap-disclosure-predecessor-link-tail.json</td><td>receipt_invalid (disclosure_predecessor_absent)</td><td>receipt_invalid (disclosure_predecessor_absent)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">15-gap-disclosure-seal-tail-mismatch.json</td><td>receipt_invalid (disclosure_not_sealed_by_successor)</td><td>receipt_invalid (disclosure_not_sealed_by_successor)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">16-gap-disclosure-contradicted-at-tail.json</td><td>receipt_invalid (disclosure_contradicted)</td><td>receipt_invalid (disclosure_contradicted)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">17-gap-disclosure-at-unsealed-tail.json</td><td>gap_disclosure_unverified</td><td>gap_disclosure_unverified</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">18-gap-disclosure-tail-with-stale-link.json</td><td>gap_disclosure_unverified</td><td>gap_disclosure_unverified</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">19-gap-disclosure-type-version-unknown.json</td><td>receipt_invalid (disclosure_type_unsupported)</td><td>receipt_invalid (disclosure_type_unsupported)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">20-gap-disclosure-type-absent.json</td><td>receipt_invalid (disclosure_type_unsupported)</td><td>receipt_invalid (disclosure_type_unsupported)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+</table></div>
+<h3 id="set-acta">acta <span class="small">trace-spec/examples/action-receipts/acta</span></h3>
+<div class="wrap"><table>
+<tr><th>Vector</th><th>Expected</th><th>This verifier</th><th>Result</th></tr>
+<tr><td class="file">01-valid-accepted.json</td><td>accepted<br><span class="small">expected.json: accepted when every check passes or is n/a</span></td><td>accepted</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">02-valid-denied.json</td><td>accepted<br><span class="small">expected.json: accepted when every check passes or is n/a</span></td><td>accepted</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">03-signature-key-mismatch.json</td><td>rejected<br><span class="small">expected.json: accepted when every check passes or is n/a</span></td><td>rejected</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">04-broken-chain.json</td><td>rejected<br><span class="small">expected.json: accepted when every check passes or is n/a</span></td><td>rejected</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">05-stale-policy-digest.json</td><td>rejected<br><span class="small">expected.json: accepted when every check passes or is n/a</span></td><td>rejected</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">06-session-binding-mismatch.json</td><td>rejected<br><span class="small">expected.json: accepted when every check passes or is n/a</span></td><td>rejected</td>
 <td><span class="st agree">✓ agrees</span>
 </td></tr>
 </table></div>

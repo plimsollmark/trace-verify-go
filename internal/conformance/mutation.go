@@ -58,6 +58,21 @@ func Mutation(root string, sets []Set, reg Registry) []RuleCoverage {
 		m.Chain = slices.Delete(slices.Clone(reg.Chain), i, i+1)
 		out = append(out, RuleCoverage{Verifier: "chain", ID: r.Code, Section: "a2a-delegation-profile " + r.Section, Changed: changed(m)})
 	}
+	for i, r := range reg.Receipt {
+		m := reg
+		m.Receipt = slices.Delete(slices.Clone(reg.Receipt), i, i+1)
+		out = append(out, RuleCoverage{Verifier: "receipt", ID: r.ID, Section: r.Section, Changed: changed(m)})
+	}
+	for i, r := range reg.Gap {
+		m := reg
+		m.Gap = slices.Delete(slices.Clone(reg.Gap), i, i+1)
+		out = append(out, RuleCoverage{Verifier: "gap", ID: r.ID, Section: r.Section, Changed: changed(m)})
+	}
+	for i, r := range reg.Acta {
+		m := reg
+		m.Acta = slices.Delete(slices.Clone(reg.Acta), i, i+1)
+		out = append(out, RuleCoverage{Verifier: "acta", ID: "acta " + r.ID, Section: r.Section, Changed: changed(m)})
+	}
 	return out
 }
 
@@ -111,6 +126,8 @@ var Uncovered = map[string]string{
 	"builder_untrusted":           "every vector's builder is trusted; provenance tests cover it",
 	"dependency_subject_mismatch": "a check this verifier adds (the attestation is for this input's digest); no vector's dependency attestation names another digest; provenance tests cover it",
 	"TR-ANC-002":                  "not implemented until PLAN.md phase 6; it reports unverified, never pass",
+	"receipt_structure":           "no action-receipt vector omits a member 3.3.2 lists; receipt tests cover it",
+	"acta decision":               "no Acta vector carries a decision outside allow, deny and rate_limit; acta tests cover it",
 }
 
 // The pinned revisions, as PLAN.md and testdata/vectors/PROVENANCE.md record them

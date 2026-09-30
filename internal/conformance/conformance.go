@@ -14,9 +14,11 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/plimsollmark/trace-verify-go/acta"
 	"github.com/plimsollmark/trace-verify-go/chain"
 	"github.com/plimsollmark/trace-verify-go/citation"
 	"github.com/plimsollmark/trace-verify-go/provenance"
+	"github.com/plimsollmark/trace-verify-go/receipt"
 	"github.com/plimsollmark/trace-verify-go/record"
 	"github.com/plimsollmark/trace-verify-go/references"
 	"github.com/plimsollmark/trace-verify-go/revocation"
@@ -196,11 +198,14 @@ type Registry struct {
 	Provenance []provenance.Rule
 	Citation   []citation.Surface
 	References []references.Step
+	Receipt    []receipt.Rule
+	Gap        []receipt.GapRule
+	Acta       []acta.Rule
 }
 
 // Default is the registry the verifiers ship with.
 func Default() Registry {
-	return Registry{Record: record.Rules, Chain: chain.Rules, Revocation: revocation.Rules, Provenance: provenance.Rules, Citation: citation.Surfaces, References: references.Steps}
+	return Registry{Record: record.Rules, Chain: chain.Rules, Revocation: revocation.Rules, Provenance: provenance.Rules, Citation: citation.Surfaces, References: references.Steps, Receipt: receipt.Rules, Gap: receipt.GapRules, Acta: acta.Rules}
 }
 
 // Observed is what a verifier reported for one case.
@@ -209,6 +214,9 @@ type Observed struct {
 	Code    string   // the code that decided the outcome, if any
 	Codes   []string // every code reported, for verifiers that report several
 	Record  *record.Result
+	Receipt *receipt.Result
+	Gap     *receipt.GapResult
+	Acta    *acta.Result
 }
 
 func fromRecord(r record.Result) Observed {

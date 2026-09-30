@@ -38,6 +38,10 @@ documents listed below, not as files read.
 | `docs/crosswalks/chap-review-decisions.md` | 2026-09-30 | the CHAP chain link and the relying party's steps |
 | `schema/trace-revocation.json`, `schema/trace-revocation-bundle.json` | 2026-09-30 | the bundle and statement format, and the bundle signature pre-image (its `sig` description) |
 | `docs/rfcs/a2a-delegation-profile.md`, sections 1 to 5 | 2026-09-30 | the ten chain rules, their classes, and the three decisions (preimage, no cycle rule, unreadable is unverifiable) |
+| `spec/trace-v0.2.md` sections 3.3.2 to 3.3.4 | 2026-09-30 | phase 5: external execution evidence, action receipts, GapDisclosure |
+| `examples/action-receipts/README.md`, and the vectors under `conformance/` (30) and `gap-disclosure/` (20) | 2026-09-30 | phase 5 adapters |
+| `examples/action-receipts/acta/README.md`, `expected.json`, both key files and its 6 vectors (not `gen.mjs`) | 2026-09-30 | phase 5 Acta adapter |
+| `docs/crosswalks/acta-decision-receipts.md` | 2026-09-30 | the Acta envelope, kid format, chain digest and verifier obligations |
 
 ## trace-tests at `v0.6.1`
 

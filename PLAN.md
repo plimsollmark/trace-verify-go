@@ -1,6 +1,6 @@
 # Plan: a Go verifier for TRACE v0.2, written from the specification
 
-Status: **Phases 0 to 4 done; phase 5 (action receipts) next** (2026-09-30). Update the status line and the phase
+Status: **Phases 0 to 5 done; phase 6 (anchoring, envelopes, runtime evidence) next** (2026-09-30). Update the status line and the phase
 table as work lands.
 
 ## Goal
@@ -62,7 +62,9 @@ a lone surrogate with U+FFFD; both must be refusals here).
 | `jcs` | Strict RFC 8259 parser (duplicate names, lone surrogates, invalid UTF-8 refused; number literals kept) and the RFC 8785 serializer: UTF-16 code-unit key order, ECMA-262 number form, and TRACE's safe-integer rule (spec 3.2.2) |
 | `jwk` | Public JWKs: OKP Ed25519, EC P-256 and P-384; private members refused; RFC 7638 thumbprints |
 | `record` | Trust Record verification: signature binding before any field is trusted (3.3 step 1), freshness (3.2.2), profile compatibility (3.3), the `origin` rule (3.1.1), and the named checks of the suite's levels (TR-ENV, TR-SIG, TR-POL, TR-APR at Level 0; TR-RTE, TR-SCA at 1; TR-TXN, TR-ANC at 2) |
-| later: `chain`, `revocation`, `receipt`, `anchor` | 3.1.3 delegation digests, 3.2.3 revocation, 3.3.3 and 3.3.4 action receipts, transparency anchoring |
+| `chain`, `revocation`, `provenance`, `citation`, `references` | 3.1.3 delegation digests, 3.2.3 revocation, 3.3.1 build-provenance depth, 3.1.2 reference resolution |
+| `receipt`, `acta` | 3.3.2 to 3.3.4: action receipts, GapDisclosure and its policy input; Acta decision receipts as a second receipt profile |
+| later: `anchor` | transparency anchoring |
 | `cmd/trace-verify` | The command: a record in, a per-rule result out, exit status by level |
 
 **Every check is an entry in one rule registry** (ID, level, spec section, function),
@@ -100,7 +102,7 @@ is reported, which is also a finding for the suite.
 | 2 | Level 0 to 2 named checks, caller-supplied policy resolver (TR-POL-003), the schema as data, two modes (spec verification and suite level check) | suite `tests/vectors` (9), `policy-resolution` (11, each run with and without a resolver) | done: policy-resolution 22/22; suite records 8/8 judged plus 1 reported without an expectation (finding 6); `record/rules_test.go` runs the 85 positive and negative cases the suite docs list |
 | 3 | Delegation digests, revocation, reproducibility-claim shape rules | `delegation-link` (24), `revocation-bundle` (28), `reproducibility-claim` (21) | delegation done: 24/24, each also run with its records reversed (48 cases), every one of the ten chain rules noticed by exactly its two vectors; revocation done: 28/28 including every evidence field the vectors list, all nine rules load-bearing; reproducibility done: 21/21, each of the eight shape rules noticed by exactly its two vectors, and every claim digest recomputed from the vector context |
 | 4 | References: citation resolution, condition appraisal, approval outcome, build-provenance depth | `citation-resolution` (16), `condition-appraisal` (9 files), `chap-approval-outcome` (7 files), `build-provenance-depth` (6) | build-provenance-depth done: 6 vectors at 3 depths, 18/18 (acceptance, verified depth, failures and unresolved evidence all compared); citation-resolution done: 16/16 with every citation row compared; condition-appraisal 5/5 and chap-approval-outcome 4/4, every step finding compared; done |
-| 5 | Action receipts and gap disclosure (informative in the spec) | `action-receipts/conformance` (30), `gap-disclosure` (20), `acta` (6) | pending |
+| 5 | Action receipts and gap disclosure (informative in the spec) | `action-receipts/conformance` (30), `gap-disclosure` (20), `acta` (6) | done: 30/30, 20/20 and 6/6 with every failure, warning, controller outcome and reported gap field compared; every receipt and disclosure rule noticed by at least its two vectors except `receipt_structure` and the Acta decision vocabulary, which no vector carries (unit tests cover both) |
 | 6 | Transparency anchoring (TR-ANC-002 receipts, registry anchor leaves), COSE_Sign1 and JWS envelopes, and the draft runtime-evidence profile | `runtime-evidence/vectors` (14, with `docs/rfcs/runtime-evidence-profile.md`); anchoring vectors to be found in the pinned revisions | pending |
 | 7 | Implementation report, mutation check results, HTML conformance page, conformance statement in the form the spec requires | all of the above | pending |
 
@@ -192,6 +194,38 @@ closed. Each later phase stands alone.
     only the ASCII reading reproduces the exported chain head. And a reference `id` of
     `audit/9` names the entry with `seq` 9, a convention the vectors use and the
     crosswalk does not state.
+
+14. **Five action-receipt behaviours are decided by the vectors, not the text.** The
+    `decision` vocabulary is `accepted` and `rejected` byte for byte (vectors 16 and 30),
+    listed nowhere. The controller outcome is the evidence's `terminal_state`, not the
+    receipt's `decision`: vector 02 signs `decision: "rejected"` over `terminal_state:
+    "aborted"` and expects `aborted`. `issuer_independence` has two values in use,
+    `separate_process` and `gateway_self_report`, and no stated rule for any other (this
+    verifier warns on anything but `separate_process`). A receipt exactly
+    `max_receipt_age_seconds` old is fresh (vector 25 is one second past it). And every
+    vector carries one defect, so nothing decides what a receipt under an unknown key
+    that also fails a binding check reports (here: `receipt_invalid`), or what an absent
+    receipt that is not required reports (here: `receipt_not_required`, a name of this
+    verifier's own).
+15. **A disclosure's chain digest has no stated pre-image.** 3.3.4 says a
+    `GapDisclosure`'s `previous_receipt_hash` is "computed the same way as on a receipt",
+    and no section says how a receipt's digest is computed. All sixteen sealed vectors
+    agree on SHA-256 over the RFC 8785 form of the whole element, signature included,
+    which is also what the Acta crosswalk states for its own chain (Acta s5.7). One
+    sentence in 3.3.3 would fix the pre-image for both.
+16. **The Acta profile's documents point at v0.1.** Its README and
+    `docs/crosswalks/acta-decision-receipts.md` link
+    `spec/trace-v0.1.md#332-action-receipts-for-embodied-workflows-informative`; at the
+    pinned commit the section is 3.3.3 of `trace-v0.2.md`, and 3.3.2 is external
+    execution evidence. The signature encoding (lowercase hex, where the embodied
+    profile uses base64url) is stated in neither document and decided by the fixtures.
+17. **The gap-disclosure policy bound has no vector.** 3.3.4 makes acceptance of
+    `receipt_gap_disclosed` a verifier policy input, with one non-negotiable bound: a
+    profile requiring proven completeness never accepts it. The vectors assert the
+    status only, so a verifier that let a policy setting accept a disclosed gap as
+    complete passes all twenty. This verifier takes the policy as input and tests the
+    bound (`receipt/receipt_test.go`); a vector pair with a policy field in `context`
+    would make it portable.
 
 ## Decisions that are not this plan's to make
 
