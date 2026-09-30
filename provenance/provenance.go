@@ -10,7 +10,9 @@
 // Attestation signatures are not verified here. Spec 3.3.1 requires it at builder depth;
 // this package takes statements whose signature the caller has already verified (the
 // shape the TRACE vectors carry: "every vector assumes signature verification already
-// succeeded") and checks what they bind.
+// succeeded") and checks what they bind. Nor is a builder attestation's signer bound to
+// the record's builder: the vectors carry no verified identity for it, and 3.3.1 does not
+// say how a signing identity maps to a builder id, so that binding is the caller's.
 package provenance
 
 import (
@@ -119,7 +121,15 @@ func VerifyWith(rules []Rule, bp *jcs.Object, attempt Depth, ctx Context) Result
 var Rules = []Rule{
 	{ID: "artifact_digest_mismatch", Depth: Surface, Section: "3.3.1 surface: digest matches the independently held artifact",
 		Check: func(s *state) ([]string, []string) {
-			if str(s.bp, "digest") != s.ctx.ArtifactDigest {
+			// An empty digest on either side is not a match: surface MUST confirm the
+			// digest against an independently held artifact, and there is no depth below
+			// surface to fall back to, so either absence fails.
+			switch {
+			case str(s.bp, "digest") == "":
+				return []string{"build_digest_absent"}, nil
+			case s.ctx.ArtifactDigest == "":
+				return []string{"artifact_not_held"}, nil
+			case str(s.bp, "digest") != s.ctx.ArtifactDigest:
 				return []string{"artifact_digest_mismatch"}, nil
 			}
 			return nil, nil
@@ -151,8 +161,9 @@ var Rules = []Rule{
 			}
 			alg, want, _ := strings.Cut(str(s.bp, "digest"), ":")
 			// The whole digest, never a prefix: vector 02's mismatch shares the leading
-			// twelve hex characters container tooling displays.
-			if !slices.ContainsFunc(list(s.att, "subject"), func(sub any) bool {
+			// twelve hex characters container tooling displays. An empty algorithm or
+			// value matches nothing, or a subject lacking that algorithm would match.
+			if alg == "" || want == "" || !slices.ContainsFunc(list(s.att, "subject"), func(sub any) bool {
 				return str(obj(sub, "digest"), alg) == want
 			}) {
 				return []string{"attestation_subject_mismatch"}, nil
@@ -182,8 +193,11 @@ var Rules = []Rule{
 		}},
 	{ID: "dependency_attestation_missing", Depth: Transitive, Section: "3.3.1 transitive: a publisher attestation for every input",
 		Check: func(s *state) ([]string, []string) {
+			// An entry with no statement is no attestation: its subject cannot be
+			// checked, so the input is not verified (builder depth treats a nil
+			// statement as unresolved the same way).
 			for _, d := range s.deps {
-				if _, ok := s.ctx.DependencyAttestations[str(obj(d, ""), "uri")]; !ok {
+				if a, ok := s.ctx.DependencyAttestations[str(obj(d, ""), "uri")]; !ok || a.Statement == nil {
 					return nil, []string{"dependency_attestation_missing"}
 				}
 			}
@@ -201,19 +215,39 @@ var Rules = []Rule{
 		}},
 	{ID: "dependency_subject_mismatch", Depth: Transitive, Section: "3.3.1: the publisher attestation is for this input's digest",
 		Check: func(s *state) ([]string, []string) {
+			var unresolved []string
 			for _, d := range s.deps {
 				a, ok := s.ctx.DependencyAttestations[str(obj(d, ""), "uri")]
 				if !ok || a.Statement == nil {
 					continue
 				}
-				want := str(obj(d, "digest"), "sha256")
-				if !slices.ContainsFunc(list(a.Statement, "subject"), func(sub any) bool {
-					return want != "" && str(obj(sub, "digest"), "sha256") == want
-				}) {
+				// in-toto digests are a map of algorithm to value; compare on every
+				// algorithm the input and a subject share, not on sha256 alone. Sharing
+				// none is evidence that cannot be compared, not a contradiction.
+				want := obj(d, "digest")
+				shared, match := false, false
+				for _, sub := range list(a.Statement, "subject") {
+					got := obj(sub, "digest")
+					if want == nil || got == nil {
+						continue
+					}
+					for _, m := range want.Members {
+						v, _ := m.Value.(string)
+						if g := str(got, m.Name); v != "" && g != "" {
+							shared = true
+							match = match || g == v
+						}
+					}
+				}
+				switch {
+				case match:
+				case shared:
 					return []string{"dependency_subject_mismatch"}, nil
+				default:
+					unresolved = []string{"dependency_digest_not_comparable"}
 				}
 			}
-			return nil, nil
+			return nil, unresolved
 		}},
 }
 

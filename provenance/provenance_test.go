@@ -118,3 +118,82 @@ func TestDependencyAttestationForAnotherDigest(t *testing.T) {
 		t.Errorf("%+v", r)
 	}
 }
+
+// An absent digest on either side is not a match (3.3.1 surface: "digest matches the
+// independently held workload artifact"), and there is no depth below surface.
+func TestSurfaceNeedsBothDigests(t *testing.T) {
+	bp, ctx := control(t)
+	if r := Verify(set(bp, "digest", nil), Surface, ctx); r.Accepted || !slices.Equal(r.Failures, []string{"build_digest_absent"}) {
+		t.Errorf("record digest absent: %+v", r)
+	}
+	held := ctx
+	held.ArtifactDigest = ""
+	if r := Verify(bp, Surface, held); r.Accepted || !slices.Equal(r.Failures, []string{"artifact_not_held"}) {
+		t.Errorf("no artifact held: %+v", r)
+	}
+	// A digest with no algorithm prefix matches no attestation subject, even when the
+	// verifier holds the same bare string.
+	bare := ctx
+	bare.ArtifactDigest = ctx.ArtifactDigest[7:]
+	if r := Verify(set(bp, "digest", bare.ArtifactDigest), Builder, bare); r.Accepted || !slices.Contains(r.Failures, "attestation_subject_mismatch") {
+		t.Errorf("bare digest at builder: %+v", r)
+	}
+}
+
+// A dependency entry with no statement is not an attestation: transitive depth is not
+// verified, and the input is named as unresolved.
+func TestDependencyWithoutAStatementIsUnresolved(t *testing.T) {
+	bp, ctx := control(t)
+	for k, a := range ctx.DependencyAttestations {
+		ctx.DependencyAttestations[k] = Attestation{VerifiedIssuer: a.VerifiedIssuer}
+		break
+	}
+	r := Verify(bp, Transitive, ctx)
+	if !r.Accepted || r.VerifiedDepth != Builder || !slices.Equal(r.Unresolved, []string{"dependency_attestation_missing"}) {
+		t.Errorf("%+v", r)
+	}
+}
+
+func rule(t *testing.T, id string) Rule {
+	t.Helper()
+	for _, r := range Rules {
+		if r.ID == id {
+			return r
+		}
+	}
+	t.Fatalf("no rule %s", id)
+	return Rule{}
+}
+
+func parseObj(t *testing.T, s string) *jcs.Object {
+	t.Helper()
+	v, err := jcs.Parse([]byte(s))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return v.(*jcs.Object)
+}
+
+// in-toto digests are a map of algorithm to value: a dependency and its attestation
+// that agree in sha512 alone match; sharing no algorithm is not comparable, not a
+// contradiction; disagreeing on a shared one is.
+func TestDependencyDigestAlgorithms(t *testing.T) {
+	check := rule(t, "dependency_subject_mismatch").Check
+	for _, c := range []struct {
+		name, dep, subject string
+		fail, unresolved   []string
+	}{
+		{"sha512 on both sides", `{"sha512":"aa"}`, `{"sha512":"aa"}`, nil, nil},
+		{"sha256 and sha512, agree on one", `{"sha256":"bb","sha512":"aa"}`, `{"sha512":"aa"}`, nil, nil},
+		{"no shared algorithm", `{"sha512":"aa"}`, `{"sha256":"aa"}`, nil, []string{"dependency_digest_not_comparable"}},
+		{"disagree", `{"sha512":"aa"}`, `{"sha512":"ab"}`, []string{"dependency_subject_mismatch"}, nil},
+	} {
+		dep := parseObj(t, `{"uri":"pkg:x","digest":`+c.dep+`}`)
+		st := parseObj(t, `{"subject":[{"digest":`+c.subject+`}]}`)
+		s := &state{deps: []any{dep}, ctx: Context{DependencyAttestations: map[string]Attestation{"pkg:x": {Statement: st}}}}
+		f, u := check(s)
+		if !slices.Equal(f, c.fail) || !slices.Equal(u, c.unresolved) {
+			t.Errorf("%s: failures %q unresolved %q", c.name, f, u)
+		}
+	}
+}
