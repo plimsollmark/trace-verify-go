@@ -48,6 +48,11 @@ func Mutation(root string, sets []Set, reg Registry) []RuleCoverage {
 		m.Citation = slices.Delete(slices.Clone(reg.Citation), i, i+1)
 		out = append(out, RuleCoverage{Verifier: "citation", ID: "surface " + r.Name, Section: "3.1.2 rule 3", Changed: changed(m)})
 	}
+	for i, r := range reg.References {
+		m := reg
+		m.References = slices.Delete(slices.Clone(reg.References), i, i+1)
+		out = append(out, RuleCoverage{Verifier: "references", ID: r.ID, Section: r.Rel + ": " + r.Section, Changed: changed(m)})
+	}
 	for i, r := range reg.Chain {
 		m := reg
 		m.Chain = slices.Delete(slices.Clone(reg.Chain), i, i+1)

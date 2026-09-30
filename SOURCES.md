@@ -33,6 +33,9 @@ documents listed below, not as files read.
 | `examples/reproducibility-claim/README.md` and its 21 vectors | 2026-09-30 | phase 3 adapter |
 | `spec/trace-v0.2.md` section 3.3.1; `examples/build-provenance-depth/README.md` and its 6 vectors | 2026-09-30 | phase 4 |
 | `examples/citation-resolution/README.md` and its 16 vectors | 2026-09-30 | phase 4 |
+| `examples/condition-appraisal/README.md`, `expected.json`, `context.json`, both stores and its 5 records | 2026-09-30 | phase 4 |
+| `examples/chap-approval-outcome/README.md`, `expected.json`, both logs and its 4 records | 2026-09-30 | phase 4 |
+| `docs/crosswalks/chap-review-decisions.md` | 2026-09-30 | the CHAP chain link and the relying party's steps |
 | `schema/trace-revocation.json`, `schema/trace-revocation-bundle.json` | 2026-09-30 | the bundle and statement format, and the bundle signature pre-image (its `sig` description) |
 | `docs/rfcs/a2a-delegation-profile.md`, sections 1 to 5 | 2026-09-30 | the ten chain rules, their classes, and the three decisions (preimage, no cycle rule, unreadable is unverifiable) |
 

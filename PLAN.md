@@ -1,6 +1,6 @@
 # Plan: a Go verifier for TRACE v0.2, written from the specification
 
-Status: **Phases 0 to 3 done; phase 4 in progress (build-provenance depth and citation resolution done)** (2026-09-30). Update the status line and the phase
+Status: **Phases 0 to 4 done; phase 5 (action receipts) next** (2026-09-30). Update the status line and the phase
 table as work lands.
 
 ## Goal
@@ -99,7 +99,7 @@ is reported, which is also a finding for the suite.
 | 1 | `jcs`, `jwk`, embedded-signature binding, freshness, profile compatibility | spec `canonicalization-boundary` (6), `verifier-compatibility` (8); suite `canonicalization` (4) and the four `invalid_canonical_*` | done: 22 of 22 pass; mutation check passes (6 rules not yet load-bearing, each with its reason in `internal/conformance`) |
 | 2 | Level 0 to 2 named checks, caller-supplied policy resolver (TR-POL-003), the schema as data, two modes (spec verification and suite level check) | suite `tests/vectors` (9), `policy-resolution` (11, each run with and without a resolver) | done: policy-resolution 22/22; suite records 8/8 judged plus 1 reported without an expectation (finding 6); `record/rules_test.go` runs the 85 positive and negative cases the suite docs list |
 | 3 | Delegation digests, revocation, reproducibility-claim shape rules | `delegation-link` (24), `revocation-bundle` (28), `reproducibility-claim` (21) | delegation done: 24/24, each also run with its records reversed (48 cases), every one of the ten chain rules noticed by exactly its two vectors; revocation done: 28/28 including every evidence field the vectors list, all nine rules load-bearing; reproducibility done: 21/21, each of the eight shape rules noticed by exactly its two vectors, and every claim digest recomputed from the vector context |
-| 4 | References: citation resolution, condition appraisal, approval outcome, build-provenance depth | `citation-resolution` (16), `condition-appraisal` (9 files), `chap-approval-outcome` (7 files), `build-provenance-depth` (6) | build-provenance-depth done: 6 vectors at 3 depths, 18/18 (acceptance, verified depth, failures and unresolved evidence all compared); citation-resolution done: 16/16 with every citation row compared; condition-appraisal and chap-approval-outcome pending |
+| 4 | References: citation resolution, condition appraisal, approval outcome, build-provenance depth | `citation-resolution` (16), `condition-appraisal` (9 files), `chap-approval-outcome` (7 files), `build-provenance-depth` (6) | build-provenance-depth done: 6 vectors at 3 depths, 18/18 (acceptance, verified depth, failures and unresolved evidence all compared); citation-resolution done: 16/16 with every citation row compared; condition-appraisal 5/5 and chap-approval-outcome 4/4, every step finding compared; done |
 | 5 | Action receipts and gap disclosure (informative in the spec) | `action-receipts/conformance` (30), `gap-disclosure` (20), `acta` (6) | pending |
 | 6 | Transparency anchoring (TR-ANC-002 receipts, registry anchor leaves), COSE_Sign1 and JWS envelopes | to be found in the pinned revisions | pending |
 | 7 | Implementation report, mutation check results, HTML conformance page, conformance statement in the form the spec requires | all of the above | pending |
@@ -186,6 +186,12 @@ closed. Each later phase stands alone.
     exactly. Separately, with no resolver a surface whose field is absent is reported
     `no_resolver` rather than `field_absent`: vectors 01, 06 and 11 decide that precedence,
     and the README's outcome table does not state it.
+13. **Two CHAP details are decided by the data, not the crosswalk.** The crosswalk gives
+    the audit chain link as `sha256(JCS(envelope) || prev_hash)` without saying whether
+    `prev_hash` enters as the ASCII of its `sha256:<hex>` form or as the raw 32 bytes;
+    only the ASCII reading reproduces the exported chain head. And a reference `id` of
+    `audit/9` names the entry with `seq` 9, a convention the vectors use and the
+    crosswalk does not state.
 
 ## Decisions that are not this plan's to make
 

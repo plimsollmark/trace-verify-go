@@ -18,6 +18,7 @@ import (
 	"github.com/plimsollmark/trace-verify-go/citation"
 	"github.com/plimsollmark/trace-verify-go/provenance"
 	"github.com/plimsollmark/trace-verify-go/record"
+	"github.com/plimsollmark/trace-verify-go/references"
 	"github.com/plimsollmark/trace-verify-go/revocation"
 )
 
@@ -194,11 +195,12 @@ type Registry struct {
 	Revocation []revocation.Rule
 	Provenance []provenance.Rule
 	Citation   []citation.Surface
+	References []references.Step
 }
 
 // Default is the registry the verifiers ship with.
 func Default() Registry {
-	return Registry{Record: record.Rules, Chain: chain.Rules, Revocation: revocation.Rules, Provenance: provenance.Rules, Citation: citation.Surfaces}
+	return Registry{Record: record.Rules, Chain: chain.Rules, Revocation: revocation.Rules, Provenance: provenance.Rules, Citation: citation.Surfaces, References: references.Steps}
 }
 
 // Observed is what a verifier reported for one case.
