@@ -120,7 +120,7 @@ func write(b *bytes.Buffer, v any) error {
 // U+007E) as a lowercase \uXXXX, and a character above the Basic Multilingual Plane as
 // its surrogate pair. Section 1's prose says only "non-ASCII characters escaped"; the
 // short escapes, the lowercase hex and the escaping of U+007F are the reference
-// expression's (PLAN.md finding 19).
+// expression's (REPORT.md finding 19).
 func writeString(b *bytes.Buffer, s string) {
 	const hexdigits = "0123456789abcdef"
 	u := func(r rune) {
@@ -210,7 +210,7 @@ func Root(leaves []Hash) (Hash, error) {
 
 // Entry is a registry entry (section 4). Extra names members beyond section 4's five,
 // which section 4 says an entry does not have and the published registry's entries do
-// (PLAN.md finding 20); they are reported, never read.
+// (REPORT.md finding 20); they are reported, never read.
 type Entry struct {
 	TS, Producer, BatchID string
 	MerkleRoot            Hash

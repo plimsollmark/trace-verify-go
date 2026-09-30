@@ -67,7 +67,7 @@ func ResolveWith(surfaces []Surface, rec *jcs.Object, resolve func(uri string) (
 		case resolve == nil:
 			// With no resolver nothing is attempted on any surface, cited or not. This
 			// precedence over field_absent is decided by vectors 01, 06 and 11, not by
-			// stated text (PLAN.md finding 12).
+			// stated text (REPORT.md finding 12).
 			c.Outcome, c.Cause = NotAttempted, "no_resolver"
 		case !present:
 			// Nothing was cited: reporting a failure to resolve would invent a citation.

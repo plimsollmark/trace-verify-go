@@ -21,7 +21,7 @@ func init() {
 }
 
 // implementationProse names evidence keys whose expected values are one
-// implementation's prose rather than protocol values (PLAN.md finding 12). For each, this
+// implementation's prose rather than protocol values (REPORT.md finding 12). For each, this
 // verifier reports its own equivalent key, which must be present.
 var implementationProse = map[string]string{"exception": "error", "reason": "reason"}
 

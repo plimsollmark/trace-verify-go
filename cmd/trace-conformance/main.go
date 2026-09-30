@@ -1,8 +1,10 @@
 // Command trace-conformance runs the vendored TRACE vectors against this verifier and
 // writes a self-contained HTML page: every set, every vector's expected and actual
-// verdict, which rules the vectors can tell apart, and the findings from PLAN.md.
+// verdict, which rules the vectors can tell apart, and the findings from REPORT.md. It
+// also writes the conformance statement, in the form TRACE v0.2 "Authority and
+// conformance claims" asks for, from the same run.
 //
-//	go run ./cmd/trace-conformance -out docs/conformance.html
+//	go run ./cmd/trace-conformance
 //
 // The output carries no timestamp, so it changes only when a verdict does.
 package main
@@ -13,9 +15,11 @@ import (
 	"fmt"
 	"html"
 	"html/template"
+	"io"
 	"os"
 	"regexp"
 	"strings"
+	texttemplate "text/template"
 
 	"github.com/plimsollmark/trace-verify-go/internal/conformance"
 	"github.com/plimsollmark/trace-verify-go/schema"
@@ -23,10 +27,11 @@ import (
 
 func main() {
 	root := flag.String("vectors", "testdata/vectors", "the vendored vectors")
-	plan := flag.String("plan", "PLAN.md", "the plan whose findings the page shows")
+	report := flag.String("report", "REPORT.md", "the report whose findings the page shows")
 	out := flag.String("out", "docs/conformance.html", "where to write the page")
+	statement := flag.String("statement", "docs/conformance-statement.md", "where to write the conformance statement")
 	flag.Parse()
-	disagree, err := run(*root, *plan, *out)
+	disagree, err := run(*root, *report, *out, *statement)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "trace-conformance:", err)
 		os.Exit(2)
@@ -45,7 +50,8 @@ type row struct {
 type setView struct {
 	Name, Slug, About, Dir string
 	Rows                   []row
-	Agree, Judged          int
+	Agree, Judged, None    int
+	Files                  int // distinct vector files; a file run more than once is several cases
 	Err                    string
 }
 
@@ -57,27 +63,38 @@ type ruleView struct {
 
 type page struct {
 	SpecCommit, SuiteTag, SchemaSHA string
+	Version                         string
 	Agree, Disagree, None, Judged   int
+	Files                           int
 	Rules, Distinguished            int
 	Sets                            []setView
 	RuleRows                        []ruleView
 	Findings                        []template.HTML
 }
 
-func run(root, planPath, out string) (disagree int, err error) {
-	p := page{SpecCommit: conformance.SpecCommit, SuiteTag: conformance.SuiteTag, SchemaSHA: schema.TraceClaimV02SHA256}
+func run(root, reportPath, out, statementOut string) (disagree int, err error) {
+	p := page{SpecCommit: conformance.SpecCommit, SuiteTag: conformance.SuiteTag, SchemaSHA: schema.TraceClaimV02SHA256,
+		Version: conformance.VerifierVersion}
 	for _, sr := range conformance.Run(root, conformance.Sets, conformance.Default()) {
 		sv := setView{Name: sr.Set.Name, Slug: "set-" + strings.ReplaceAll(sr.Set.Name, " ", "-"), About: sr.Set.About, Dir: sr.Set.Dir}
 		if sr.Err != nil {
 			sv.Err = sr.Err.Error()
 		}
+		seen := map[string]bool{}
 		for _, v := range sr.Verdicts {
+			// A repeated run is marked by a suffix on its file: #reversed, #no-resolver,
+			// or a provenance depth.
+			if f, _, _ := strings.Cut(v.Case.File, "#"); !seen[f] {
+				seen[f] = true
+				sv.Files++
+			}
 			r := row{File: strings.TrimPrefix(v.Case.File, sr.Set.Dir+"/"), Name: v.Case.Name,
 				Expected: expected(v.Case.Expect), Got: got(v), Source: v.Case.Expect.Source,
 				Problems: v.Problems, Notes: v.Notes}
 			switch {
 			case v.Case.Expect.Informational():
 				r.State = "none"
+				sv.None++
 				p.None++
 			case v.Passed():
 				r.State = "agree"
@@ -91,6 +108,7 @@ func run(root, planPath, out string) (disagree int, err error) {
 		}
 		p.Agree += sv.Agree
 		p.Judged += sv.Judged
+		p.Files += sv.Files
 		p.Sets = append(p.Sets, sv)
 	}
 	p.Disagree = p.Judged - p.Agree
@@ -112,21 +130,33 @@ func run(root, planPath, out string) (disagree int, err error) {
 	}
 	p.Rules = len(cov)
 
-	planText, err := os.ReadFile(planPath)
+	reportText, err := os.ReadFile(reportPath)
 	if err != nil {
 		return 0, err
 	}
-	p.Findings = findings(string(planText))
+	p.Findings = findings(string(reportText))
+	if len(p.Findings) == 0 {
+		return 0, fmt.Errorf("%s has no numbered list under %q", reportPath, findingsHeading)
+	}
+	// The report quotes the headline; it must be the one this run produced.
+	if headline := fmt.Sprintf("%d of %d judged cases agree, from %d vector files", p.Agree, p.Judged, p.Files); !strings.Contains(string(reportText), headline) {
+		return 0, fmt.Errorf("%s does not say %q", reportPath, headline)
+	}
 
-	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, p); err != nil {
-		return 0, err
+	for _, w := range []struct {
+		t    interface{ Execute(io.Writer, any) error }
+		path string
+	}{{tmpl, out}, {statementTmpl, statementOut}} {
+		var buf bytes.Buffer
+		if err := w.t.Execute(&buf, p); err != nil {
+			return 0, err
+		}
+		if err := os.WriteFile(w.path, buf.Bytes(), 0o644); err != nil {
+			return 0, err
+		}
 	}
-	if err := os.WriteFile(out, buf.Bytes(), 0o644); err != nil {
-		return 0, err
-	}
-	fmt.Printf("%s: %d of %d judged vectors agree, %d reported without an expectation; %d of %d rules distinguished by a vector\n",
-		out, p.Agree, p.Judged, p.None, p.Distinguished, p.Rules)
+	fmt.Printf("%s: %d of %d judged cases agree (from %d vector files), %d reported without an expectation; %d of %d rules distinguished by a vector\n",
+		out, p.Agree, p.Judged, p.Files, p.None, p.Distinguished, p.Rules)
 	return p.Disagree, nil
 }
 
@@ -173,9 +203,11 @@ var (
 	code      = regexp.MustCompile("`([^`]+)`")
 )
 
-// findings renders PLAN.md's numbered findings list, which stays the one home for them.
-func findings(plan string) []template.HTML {
-	_, rest, ok := strings.Cut(plan, "## Findings so far")
+const findingsHeading = "\n## Findings\n"
+
+// findings renders REPORT.md's numbered findings list, which stays the one home for them.
+func findings(report string) []template.HTML {
+	_, rest, ok := strings.Cut(report, findingsHeading)
 	if !ok {
 		return nil
 	}
@@ -242,11 +274,11 @@ ol.findings li { margin: 0 0 10px; max-width: 900px; }
 <main>
 <h1>TRACE v0.2 conformance: trace-verify-go</h1>
 <p class="lede">A Go verifier for TRACE Trust Records, written from the specification alone, run against the TRACE project's own published vectors. Each vector's expectation comes from the vector file; where a file states none, the row says where the expectation came from, or that there is none.</p>
-<div class="pins">Specification and schema: <code>agentrust-io/trace-spec</code> at <code>{{.SpecCommit}}</code>, schema SHA-256 <code>{{.SchemaSHA}}</code>. Suite vectors: <code>agentrust-io/trace-tests</code> <code>{{.SuiteTag}}</code>.</div>
+<div class="pins">Specification and schema: <code>agentrust-io/trace-spec</code> at <code>{{.SpecCommit}}</code>, schema SHA-256 <code>{{.SchemaSHA}}</code>. Suite vectors: <code>agentrust-io/trace-tests</code> <code>{{.SuiteTag}}</code>. Verifier: <code>trace-verify-go</code> <code>{{.Version}}</code>. The claim in full: <code>docs/conformance-statement.md</code>.</div>
 
 <div class="tiles">
-  <div class="tile"><div class="n">{{.Agree}} of {{.Judged}}</div><div class="l">vectors with an expectation agree</div></div>
-  <div class="tile"><div class="n">{{.Disagree}}</div><div class="l">vectors disagree</div></div>
+  <div class="tile"><div class="n">{{.Agree}} of {{.Judged}}</div><div class="l">judged cases agree, from {{.Files}} vector files (a file run more than once is several cases)</div></div>
+  <div class="tile"><div class="n">{{.Disagree}}</div><div class="l">cases disagree</div></div>
   <div class="tile"><div class="n">{{.None}}</div><div class="l">run and shown without a verdict (the vector states none)</div></div>
   <div class="tile"><div class="n">{{.Distinguished}} of {{.Rules}}</div><div class="l">rules whose deletion some vector notices</div></div>
 </div>
@@ -258,7 +290,7 @@ ol.findings li { margin: 0 0 10px; max-width: 900px; }
 {{end}}</table></div>
 
 <h2 id="findings">Findings for the TRACE project</h2>
-<p class="small">From <code>PLAN.md</code>, where they are kept. Each is something a second implementation surfaced about the specification, the schema or the suite.</p>
+<p class="small">From <code>REPORT.md</code>, where they are kept. Each is something a second implementation surfaced about the specification, the schema or the suite.</p>
 <ol class="findings">{{range .Findings}}<li>{{.}}</li>{{end}}</ol>
 
 <h2 id="rules">Which rules the vectors can tell apart</h2>
@@ -281,4 +313,44 @@ ol.findings li { margin: 0 0 10px; max-width: 900px; }
 </main>
 </body>
 </html>
+`))
+
+// statementTmpl is the conformance statement, in Markdown.
+var statementTmpl = texttemplate.Must(texttemplate.New("statement").Parse(`# Conformance statement: trace-verify-go {{.Version}}
+
+Generated by ` + "`go run ./cmd/trace-conformance`" + ` from the vectors this repository vendors. Do not edit;
+regenerate. It is a statement about a verifier, not about any Trust Record, made in the
+form TRACE v0.2 "Authority and conformance claims" asks for.
+
+| | |
+|---|---|
+| Specification | TRACE v0.2 (draft), ` + "`agentrust-io/trace-spec`" + ` at commit ` + "`{{.SpecCommit}}`" + ` (an unreleased checkout, so the full commit is named) |
+| Schema used for validation | ` + "`schema/trace-claim.json`" + `, SHA-256 ` + "`{{.SchemaSHA}}`" + ` |
+| Normative companion | TRACE Registry Anchor Format v1, ` + "`spec/registry-anchor-v1.md`" + ` at the same commit |
+| Conformance suite | ` + "`agentrust-io/trace-tests`" + ` ` + "`{{.SuiteTag}}`" + `: its vectors and its documented checks; its runner was not used |
+| Verifier | ` + "`trace-verify-go`" + ` {{.Version}}, Go, standard library only |
+| Assessed | the specification's verification (3.3) with the declared profile set ` + "`tag:agentrust-io.com,2026:trace-v0.2`" + `, and the suite's level check at levels 0, 1 and 2 |
+
+## Result
+
+{{.Agree}} of {{.Judged}} judged cases agree, from {{.Files}} vector files; {{.Disagree}} disagree; {{.None}} run and reported
+without a verdict, because the vector states none. A file run more than once is several
+cases: delegation vectors in both record orders, build-provenance vectors at each depth,
+and policy-resolution vectors with and without a resolver.
+
+| Set | Source | Files | Cases that agree | Without a verdict |
+|---|---|---|---|---|
+{{range .Sets}}| {{.Name}} | ` + "`{{.Dir}}`" + ` | {{.Files}} | {{.Agree}} of {{.Judged}} | {{.None}} |
+{{end}}
+## What the vectors can tell apart
+
+Deleting one rule at a time and rerunning every vector, the method of trace-spec
+` + "`docs/conformance-method.md`" + `: {{.Distinguished}} of this verifier's {{.Rules}} rules change some vector's verdict. The
+others are listed, each with the reason no vector notices it, on the conformance page.
+
+## Scope
+
+Which verification steps of spec 3.3 this verifier performs, and which it does not, is in
+` + "`REPORT.md`" + `, "What is verified". Passing these vectors is not complete conformance:
+several rules have no vector (` + "`REPORT.md`" + ` findings 8, 17 and 22).
 `))

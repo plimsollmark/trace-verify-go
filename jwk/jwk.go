@@ -131,7 +131,7 @@ func (k *Key) Thumbprint() string {
 // Verify checks sig over msg. Ed25519 signs msg itself (RFC 8032). For EC, sig is the
 // JWS form, r then s as fixed-width big-endian integers (RFC 7518 section 3.4), over
 // SHA-256 for P-256 and SHA-384 for P-384. TRACE does not say which EC encoding an
-// embedded signature uses (see PLAN.md, finding 1); this is the JWS reading.
+// embedded signature uses (see REPORT.md, finding 1); this is the JWS reading.
 func (k *Key) Verify(msg, sig []byte) error {
 	switch {
 	case k.ed != nil:

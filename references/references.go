@@ -99,7 +99,7 @@ var Steps = []Step{
 	{ID: "approval_resolves", Rel: "approval-outcome", Section: "crosswalk step 2: resolve id to a log entry",
 		Run: func(in *Input, f *Findings) {
 			// The id names the entry's seq as "audit/<seq>": the vectors' convention,
-			// which the crosswalk does not state (PLAN.md finding 13).
+			// which the crosswalk does not state (REPORT.md finding 13).
 			seq, ok := strings.CutPrefix(str(in.Reference, "id"), "audit/")
 			n, err := strconv.Atoi(seq)
 			for _, e := range in.Log {
@@ -176,7 +176,7 @@ func verdict(rel string, f Findings, acceptOverride bool) string {
 // ReplayChain recomputes a CHAP audit-scitt/1.0 chain head: each link is
 // sha256(JCS(envelope) || prev_hash). prev_hash is concatenated as the ASCII of its
 // "sha256:<hex>" form; the crosswalk's formula does not say, and only the exported
-// head decides it (PLAN.md finding 13). An entry whose prev_hash is not the previous
+// head decides it (REPORT.md finding 13). An entry whose prev_hash is not the previous
 // link breaks the replay.
 func ReplayChain(entries []*jcs.Object) string {
 	prev := "sha256:" + strings.Repeat("0", 64)

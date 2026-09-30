@@ -567,7 +567,7 @@ var Rules = []Rule{
 		}},
 	{ID: "TR-SCA-002", Suite: "TR-SCA-002", Level: 1, Section: "3.1 build_provenance; schema: build_provenance.digest", Stage: StageClaims,
 		Check: func(s *state) Finding {
-			// The schema admits sha384 as well; the suite's docs say sha256 (PLAN.md finding 5).
+			// The schema admits sha384 as well; the suite's docs say sha256 (REPORT.md finding 5).
 			if d, ok := s.str("build_provenance", "digest"); !ok || !digestPattern.MatchString(d) {
 				return fail("build_digest_invalid", "build_provenance.digest is not sha256:<64 hex> or sha384:<96 hex>")
 			}
@@ -575,7 +575,7 @@ var Rules = []Rule{
 		}},
 	{ID: "TR-TXN-001", Suite: "TR-TXN-001", Level: 2, Section: "3.1 tool_transcript; schema: tool_transcript.hash", Stage: StageClaims,
 		Check: func(s *state) Finding {
-			// As TR-SCA-002: the schema admits sha384 (PLAN.md finding 5).
+			// As TR-SCA-002: the schema admits sha384 (REPORT.md finding 5).
 			if h, ok := s.str("tool_transcript", "hash"); !ok || !digestPattern.MatchString(h) {
 				return fail("transcript_hash_invalid", "tool_transcript.hash is absent or not a valid digest")
 			}

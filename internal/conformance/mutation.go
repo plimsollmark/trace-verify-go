@@ -136,3 +136,7 @@ const (
 	SpecCommit = "63f4d1500c24f837bd96a503a09860a49778e5bb"
 	SuiteTag   = "v0.6.1"
 )
+
+// VerifierVersion is the release the conformance statement names. Publishing tags the
+// commit that carries it; a statement is only true of the tagged revision.
+const VerifierVersion = "v0.1.0"

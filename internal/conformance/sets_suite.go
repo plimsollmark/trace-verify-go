@@ -97,12 +97,12 @@ func loadSuiteRecords(root, dir string) ([]Case, error) {
 		"valid_level0":                 l0(record.Verified, "", "name: valid at level 0; levels.md: an unsigned record is TR-SIG-005 unverified, which fails only from level 1"),
 		"valid_level0_with_transcript": l0(record.Verified, "", "name, as valid_level0"),
 		"valid_appraisal_full":         l0(record.Verified, "", "name: valid; unsigned, so level 0 is the highest level it can meet (levels.md)"),
-		"valid_openshell_import":       l0(record.Rejected, "schema_invalid", "the name says valid, but appraisal.verifier is \"nvidia-openshell/0.3.0\", the exact negative case trace-tests docs/modules/tr-apr.md gives for TR-APR-002, and the schema requires format uri; the documented rule outranks a file name (PLAN.md finding 7)"),
+		"valid_openshell_import":       l0(record.Rejected, "schema_invalid", "the name says valid, but appraisal.verifier is \"nvidia-openshell/0.3.0\", the exact negative case trace-tests docs/modules/tr-apr.md gives for TR-APR-002, and the schema requires format uri; the documented rule outranks a file name (REPORT.md finding 7)"),
 		"invalid_missing_runtime":      l0(record.Rejected, "schema_invalid", "name: invalid; the schema requires runtime (TR-RTE-001 would also fail it from level 1)"),
 		"invalid_wrong_profile":        l0(record.Rejected, "profile_not_accepted", "name: invalid; TR-ENV-001"),
 		"signed_root":                  {record.ModeVerify, 0, record.Verified, "", "name: signed; spec 3.3 verification with freshness off"},
 		"signed_delegated_hop":         {record.ModeVerify, 0, record.Verified, "", "name: signed; spec 3.3 verification with freshness off (its delegation link is phase 3)"},
-		"valid_cmcp_runtime":           {record.ModeVerify, 0, "", "", "no expectation derived: a cMCP envelope whose signature is a 20-character placeholder, which cannot be an Ed25519 signature under any reading, so 'valid' names something the vector does not say (PLAN.md finding 6)"},
+		"valid_cmcp_runtime":           {record.ModeVerify, 0, "", "", "no expectation derived: a cMCP envelope whose signature is a 20-character placeholder, which cannot be an Ed25519 signature under any reading, so 'valid' names something the vector does not say (REPORT.md finding 6)"},
 	}
 	paths, err := files(root, dir)
 	if err != nil {

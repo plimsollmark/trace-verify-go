@@ -10,7 +10,7 @@
 // The receipt shape is the one the action-receipts examples use (trace-spec
 // examples/action-receipts/README.md, "Shared receipt shape"). Behaviour the spec text
 // does not state and a vector decides is marked "decided by the vectors" beside the rule,
-// and listed in PLAN.md's findings.
+// and listed in REPORT.md's findings.
 package receipt
 
 import (
