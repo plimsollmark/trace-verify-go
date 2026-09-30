@@ -53,6 +53,9 @@ type state struct {
 	key  *jwk.Key
 	// signed is set when the signature finding passes: the record verified under key.
 	signed bool
+	// unusable says why a cnf key of a supported type cannot verify (its curve or its
+	// coordinates), when cnf_key_type found one.
+	unusable string
 }
 
 func pass() Finding                          { return Finding{Status: Pass} }
@@ -190,6 +193,7 @@ var Rules = []Rule{
 				// The key type is supported; this key (its curve, or its coordinates) is
 				// not usable, which the signature finding reports. The suite: "a supported
 				// key that is not that pair passes this check and fails TR-SIG-005".
+				s.unusable = err.Error()
 				return Finding{Status: Pass, Detail: "supported key type; key unusable: " + err.Error()}
 			}
 			s.key = k
@@ -209,6 +213,12 @@ var Rules = []Rule{
 			v, ok := s.rec.Get("signature")
 			if !ok {
 				return cannot("signature_absent", "no embedded signature")
+			}
+			if s.unusable != "" {
+				// trace-tests docs/error-codes.md, TR-SIG-004: "a supported key that is not
+				// that pair passes this check and fails TR-SIG-005". A fail, not an
+				// unverified, so level 0 does not tolerate it as it tolerates no signature.
+				return fail("signature_key_unusable", "the cnf key has a supported type but cannot verify: "+s.unusable)
 			}
 			if s.key == nil {
 				return cannot("signature_not_checked", "the cnf key is absent, private, unsupported or malformed")

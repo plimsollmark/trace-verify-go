@@ -124,7 +124,7 @@ func TestSuiteDocCases(t *testing.T) {
 		{"cnf_public_only", 0, Fail, set("cnf.jwk.qi", "AAAA")},
 		{"cnf_key_type", 0, Fail, set("cnf.jwk.kty", "RSA")},
 		{"cnf_key_type", 0, Pass, set("cnf.jwk.crv", "X25519")}, // supported type, unusable key
-		{"signature", 0, Unverified, set("cnf.jwk.crv", "X25519")},
+		{"signature", 0, Fail, set("cnf.jwk.crv", "X25519")},    // error-codes.md TR-SIG-004: "fails TR-SIG-005"
 		{"signature", 0, Unverified, del("signature")},
 		{"signature", 1, Unverified, del("signature")},
 		{"signature", 0, Fail, set("signature", strings.Repeat("A", 86))},
@@ -395,5 +395,32 @@ func TestCheckBindingRefusesUnsafeIntegers(t *testing.T) {
 	}
 	if _, err := CheckBinding(v.(*jcs.Object)); !errors.Is(err, jcs.ErrUnsafeInteger) {
 		t.Fatalf("got %v", err)
+	}
+}
+
+// trace-tests docs/error-codes.md, TR-SIG-004: a supported key type that cannot verify
+// "passes this check and fails TR-SIG-005", so level 0 does not tolerate it.
+func TestUnusableSupportedKeyFailsTRSIG005(t *testing.T) {
+	for name, key := range map[string]map[string]any{
+		"X25519": {"kty": "OKP", "crv": "X25519", "x": "11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo"},
+		"P-521":  {"kty": "EC", "crv": "P-521", "x": "AA", "y": "AA"},
+		"EC point off the curve": {"kty": "EC", "crv": "P-256",
+			"x": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAE", "y": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAE"},
+	} {
+		b := build(t, func(r map[string]any) {
+			r["cnf"] = map[string]any{"jwk": key}
+			r["signature"] = "AAAA"
+		})
+		lv := CheckLevel(b, 0, Options{Now: testNow})
+		f4, _ := lv.Finding("cnf_key_type")
+		f5, _ := lv.Finding("signature")
+		if f4.Status != Pass || f5.Status != Fail || f5.Code != "signature_key_unusable" || lv.Outcome != Rejected {
+			t.Errorf("%s: %s %s; TR-SIG-004 %+v; TR-SIG-005 %+v", name, lv.Outcome, lv.Code, f4, f5)
+		}
+	}
+	// With no signature at all, level 0 still tolerates it (TR-SIG-005 row).
+	b := build(t, func(r map[string]any) { delete(r, "signature") })
+	if lv := CheckLevel(b, 0, Options{Now: testNow}); lv.Outcome != Verified {
+		t.Errorf("unsigned at level 0: %s %s", lv.Outcome, lv.Code)
 	}
 }
