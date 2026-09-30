@@ -11,7 +11,7 @@ form TRACE v0.2 "Authority and conformance claims" asks for.
 | Normative companion | TRACE Registry Anchor Format v1, `spec/registry-anchor-v1.md` at the same commit |
 | Conformance suite | `agentrust-io/trace-tests` `v0.6.1`: its vectors and its documented checks; its runner was not used |
 | Verifier | `trace-verify-go` v0.1.0, Go, standard library only |
-| Assessed | the specification's verification (3.3) with the declared profile set `tag:agentrust-io.com,2026:trace-v0.2`, and the suite's level check at levels 0, 1 and 2 |
+| Assessed | the specification's verification (3.3) with the declared profile set `tag:agentrust-io.com,2026:trace-v0.2`, and the suite's level check at level 0 only: no vendored vector carries an expected result at level 1 or 2, so those levels are not assessed here |
 
 ## Result
 

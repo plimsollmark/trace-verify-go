@@ -65,6 +65,9 @@ delegation chains (3.1.3 and the draft A2A delegation profile); reproducibility 
 (3.1.4); action receipts, GapDisclosure and Acta decision receipts (3.3.2 to 3.3.4); and
 the suite's named checks at levels 0, 1 and 2 as a separate mode, since the suite reports
 every applicable check where the spec's verification stops at the first failed stage.
+Against the vectors, that mode is assessed at level 0 only: no vendored vector carries an
+expected result at level 1 or 2 (finding 8). The level 1 and 2 checks are tested from
+the positive and negative cases the suite's docs list.
 
 Not implemented: the JWS, COSE_Sign1 and cMCP enveloping forms (findings 6 and 18), and
 grading of the draft v0.3 runtime-evidence profile, which needs an Intel TDX quote
