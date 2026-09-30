@@ -283,10 +283,13 @@ They fall into four kinds:
     with 3.2.2.
 25. **Nothing says whether an ECDSA signature with a high S value is accepted.** For an
     embedded ES256 or ES384 signature, `(r, n - s)` verifies wherever `(r, s)` does, so a
-    third party can produce a second valid signature and with it a second record digest
-    for delegation links (3.1.3). Neither 3.2.2 nor RFC 7518 requires low S, and JWS
-    verifiers generally accept both; this verifier does too. A sentence in 3.2.2 either
-    requiring low S or stating that a link digest is not unique to the signed content
+    third party without the key can make a second valid signed record with a different
+    digest. Delegation links (3.1.3) and anchors (Anchor Format v1 section 1) bind the
+    exact signed record, so both reject the twin, as intended. What is unstated is whether
+    a consumer may treat that digest as identifying the claim rather than the signed
+    artifact (for deduplication or replay prevention, say). Neither 3.2.2 nor RFC 7518
+    requires low S, and this verifier accepts both. A sentence in 3.2.2 either requiring
+    low S or stating that a record digest identifies the signed artifact, not the claim,
     would settle it.
 26. **It is unclear how far 3.2.2's integer rule reaches.** "What the rule covers" extends
     the safe-integer rule to revocation statements and bundles and to "any object whose
