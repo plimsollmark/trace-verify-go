@@ -9,6 +9,14 @@ verified, what was not, and 26 findings about the specification and its vectors:
 [REPORT.md](REPORT.md). The exact claim: [the conformance statement](docs/conformance-statement.md).
 How it was built, phase by phase: [PLAN.md](PLAN.md).
 
+**A worked example:** [examples/refund-dispute](examples/refund-dispute/). A support
+agent tries to refund 500 USD, a policy gate denies it because automatic refunds stop at
+100 USD, and the agent escalates to a person instead. The gate's two chained, signed decision
+receipts (Acta receipts, which TRACE's Acta crosswalk maps onto the receipts of its
+section 3.3.2) and the agent's Trust Record that references them are verified end to
+end, three tampered copies fail, and the example's README says what the evidence does
+not prove.
+
 Licensed under the Apache License 2.0 ([LICENSE](LICENSE)). The Community Specification
 License 1.0 that covers the TRACE specification is included as
 [COMMUNITY-SPECIFICATION-LICENSE.md](COMMUNITY-SPECIFICATION-LICENSE.md), as its
@@ -29,10 +37,6 @@ and 2 on a usage or input error. The issuer is authenticated only by a pinned ke
 key, so the spec's verification reports UNVERIFIED (`issuer_not_authenticated`) and exits
 1. `-trust-embedded-key` accepts the record's own key instead, for a key established by
 other means; the output still says the issuer was not authenticated.
-
-[examples/refund-dispute](examples/refund-dispute/) is a worked example: a policy gate's
-Acta decision receipts (a refund denied, an escalation allowed, chained) and the agent's
-Trust Record that references them, checked end to end, with three tampering cases.
 
 The conformance page, [docs/conformance.html](docs/conformance.html), shows every
 vector's expected and actual verdict, which rules the vectors can tell apart, and the
