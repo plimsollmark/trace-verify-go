@@ -33,6 +33,11 @@ func Mutation(root string, sets []Set, reg Registry) []RuleCoverage {
 		m.Record = slices.Delete(slices.Clone(reg.Record), i, i+1)
 		out = append(out, RuleCoverage{Verifier: "record", ID: r.ID, Suite: r.Suite, Section: r.Section, Level: r.Level, Changed: changed(m)})
 	}
+	for i, r := range reg.Revocation {
+		m := reg
+		m.Revocation = slices.Delete(slices.Clone(reg.Revocation), i, i+1)
+		out = append(out, RuleCoverage{Verifier: "revocation", ID: r.ID, Section: r.Section, Changed: changed(m)})
+	}
 	for i, r := range reg.Chain {
 		m := reg
 		m.Chain = slices.Delete(slices.Clone(reg.Chain), i, i+1)

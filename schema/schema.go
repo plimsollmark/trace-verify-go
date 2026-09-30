@@ -34,9 +34,10 @@ var keywords = []string{
 // Annotation keywords, accepted and ignored.
 var annotations = []string{"$schema", "$id", "$defs", "$comment", "description", "title", "default", "examples"}
 
-// Schema is a compiled schema.
+// Schema is a compiled schema: a root document and any documents it references by $id.
 type Schema struct {
 	root     any
+	docs     map[string]any // by $id
 	patterns map[string]*regexp.Regexp
 }
 
@@ -49,14 +50,32 @@ type Violation struct {
 
 func (v Violation) String() string { return v.Path + ": " + v.Keyword + ": " + v.Message }
 
-// Compile parses and checks a schema document.
-func Compile(doc []byte) (*Schema, error) {
-	root, err := jcs.Parse(doc)
-	if err != nil {
-		return nil, err
+// Compile parses and checks a schema document, together with any documents its $refs
+// name by absolute URI; those are matched by their own $id.
+func Compile(doc []byte, referenced ...[]byte) (*Schema, error) {
+	s := &Schema{docs: map[string]any{}, patterns: map[string]*regexp.Regexp{}}
+	for i, d := range append([][]byte{doc}, referenced...) {
+		v, err := jcs.Parse(d)
+		if err != nil {
+			return nil, err
+		}
+		if i == 0 {
+			s.root = v
+		}
+		if o, ok := v.(*jcs.Object); ok {
+			if id, ok := o.Get("$id"); ok {
+				if idStr, isStr := id.(string); isStr {
+					s.docs[idStr] = v
+				}
+			}
+		}
 	}
-	s := &Schema{root: root, patterns: map[string]*regexp.Regexp{}}
-	if err := s.check(root, "#"); err != nil {
+	for id, d := range s.docs {
+		if err := s.check(d, id+"#", d); err != nil {
+			return nil, err
+		}
+	}
+	if err := s.check(s.root, "#", s.root); err != nil {
 		return nil, err
 	}
 	return s, nil
@@ -64,7 +83,7 @@ func Compile(doc []byte) (*Schema, error) {
 
 // check walks every subschema, refusing unknown keywords, compiling patterns, and
 // resolving every $ref once so a dangling one fails at compile time.
-func (s *Schema) check(node any, at string) error {
+func (s *Schema) check(node any, at string, base any) error {
 	if _, ok := node.(bool); ok {
 		return nil
 	}
@@ -82,7 +101,7 @@ func (s *Schema) check(node any, at string) error {
 					return fmt.Errorf("schema: %s is not an object", sub)
 				}
 				for _, d := range defs.Members {
-					if err := s.check(d.Value, sub+"/"+d.Name); err != nil {
+					if err := s.check(d.Value, sub+"/"+d.Name, base); err != nil {
 						return err
 					}
 				}
@@ -95,7 +114,7 @@ func (s *Schema) check(node any, at string) error {
 				return fmt.Errorf("schema: %s is not an object", sub)
 			}
 			for _, p := range props.Members {
-				if err := s.check(p.Value, sub+"/"+p.Name); err != nil {
+				if err := s.check(p.Value, sub+"/"+p.Name, base); err != nil {
 					return err
 				}
 			}
@@ -105,12 +124,12 @@ func (s *Schema) check(node any, at string) error {
 				return fmt.Errorf("schema: %s is not a nonempty array", sub)
 			}
 			for i, e := range list {
-				if err := s.check(e, fmt.Sprintf("%s/%d", sub, i)); err != nil {
+				if err := s.check(e, fmt.Sprintf("%s/%d", sub, i), base); err != nil {
 					return err
 				}
 			}
 		case slices.Contains([]string{"additionalProperties", "items", "not", "if", "then", "else"}, m.Name):
-			if err := s.check(m.Value, sub); err != nil {
+			if err := s.check(m.Value, sub, base); err != nil {
 				return err
 			}
 		case m.Name == "pattern":
@@ -134,7 +153,7 @@ func (s *Schema) check(node any, at string) error {
 			if !ok {
 				return fmt.Errorf("schema: %s is not a string", sub)
 			}
-			if _, err := s.resolve(ref); err != nil {
+			if _, _, err := s.resolve(ref, base); err != nil {
 				return err
 			}
 		}
@@ -142,35 +161,44 @@ func (s *Schema) check(node any, at string) error {
 	return nil
 }
 
-// resolve follows a same-document JSON Pointer reference ("#/$defs/name").
-func (s *Schema) resolve(ref string) (any, error) {
-	if !strings.HasPrefix(ref, "#") {
-		return nil, fmt.Errorf("schema: only same-document references are supported: %q", ref)
-	}
-	node := s.root
-	for _, tok := range strings.Split(strings.TrimPrefix(ref, "#"), "/")[1:] {
-		tok = strings.ReplaceAll(strings.ReplaceAll(tok, "~1", "/"), "~0", "~")
-		o, ok := node.(*jcs.Object)
+// resolve follows a reference: "#/..." is a JSON Pointer into the current document,
+// and "<uri>#/..." one into the document whose $id is uri. It returns the target and the
+// document that becomes the base for references inside it.
+func (s *Schema) resolve(ref string, base any) (any, any, error) {
+	uri, frag, _ := strings.Cut(ref, "#")
+	if uri != "" {
+		doc, ok := s.docs[uri]
 		if !ok {
-			return nil, fmt.Errorf("schema: reference %q does not resolve", ref)
+			return nil, nil, fmt.Errorf("schema: reference %q names no loaded document", ref)
 		}
-		if node, ok = o.Get(tok); !ok {
-			return nil, fmt.Errorf("schema: reference %q does not resolve", ref)
+		base = doc
+	}
+	node := base
+	if frag != "" {
+		for _, tok := range strings.Split(frag, "/")[1:] {
+			tok = strings.ReplaceAll(strings.ReplaceAll(tok, "~1", "/"), "~0", "~")
+			o, ok := node.(*jcs.Object)
+			if !ok {
+				return nil, nil, fmt.Errorf("schema: reference %q does not resolve", ref)
+			}
+			if node, ok = o.Get(tok); !ok {
+				return nil, nil, fmt.Errorf("schema: reference %q does not resolve", ref)
+			}
 		}
 	}
-	return node, nil
+	return node, base, nil
 }
 
 // Validate returns every violation of the schema by a parsed instance.
 func (s *Schema) Validate(instance any) []Violation {
-	return s.eval(s.root, instance, "$", 0)
+	return s.eval(s.root, instance, "$", 0, s.root)
 }
 
-func (s *Schema) valid(node, inst any, depth int) bool {
-	return len(s.eval(node, inst, "$", depth)) == 0
+func (s *Schema) valid(node, inst any, depth int, base any) bool {
+	return len(s.eval(node, inst, "$", depth, base)) == 0
 }
 
-func (s *Schema) eval(node, inst any, path string, depth int) []Violation {
+func (s *Schema) eval(node, inst any, path string, depth int, base any) []Violation {
 	if depth > 64 {
 		return []Violation{{path, "$ref", "reference depth exceeded"}}
 	}
@@ -186,8 +214,8 @@ func (s *Schema) eval(node, inst any, path string, depth int) []Violation {
 	for _, m := range o.Members {
 		switch m.Name {
 		case "$ref":
-			target, _ := s.resolve(m.Value.(string)) // resolved at compile time
-			out = append(out, s.eval(target, inst, path, depth+1)...)
+			target, tbase, _ := s.resolve(m.Value.(string), base) // resolved at compile time
+			out = append(out, s.eval(target, inst, path, depth+1, tbase)...)
 		case "type":
 			var names []string
 			switch t := m.Value.(type) {
@@ -223,7 +251,7 @@ func (s *Schema) eval(node, inst any, path string, depth int) []Violation {
 			if io, ok := inst.(*jcs.Object); ok {
 				for _, p := range m.Value.(*jcs.Object).Members {
 					if v, has := io.Get(p.Name); has {
-						out = append(out, s.eval(p.Value, v, path+"."+p.Name, depth)...)
+						out = append(out, s.eval(p.Value, v, path+"."+p.Name, depth, base)...)
 					}
 				}
 			}
@@ -233,14 +261,14 @@ func (s *Schema) eval(node, inst any, path string, depth int) []Violation {
 				po, _ := props.(*jcs.Object)
 				for _, im := range io.Members {
 					if _, declared := po.Get(im.Name); !declared {
-						out = append(out, s.eval(m.Value, im.Value, path+"."+im.Name, depth)...)
+						out = append(out, s.eval(m.Value, im.Value, path+"."+im.Name, depth, base)...)
 					}
 				}
 			}
 		case "items":
 			if arr, ok := inst.([]any); ok {
 				for i, e := range arr {
-					out = append(out, s.eval(m.Value, e, fmt.Sprintf("%s[%d]", path, i), depth)...)
+					out = append(out, s.eval(m.Value, e, fmt.Sprintf("%s[%d]", path, i), depth, base)...)
 				}
 			}
 		case "pattern":
@@ -267,23 +295,23 @@ func (s *Schema) eval(node, inst any, path string, depth int) []Violation {
 			}
 		case "allOf":
 			for _, sub := range m.Value.([]any) {
-				out = append(out, s.eval(sub, inst, path, depth+1)...)
+				out = append(out, s.eval(sub, inst, path, depth+1, base)...)
 			}
 		case "anyOf":
-			if !slices.ContainsFunc(m.Value.([]any), func(sub any) bool { return s.valid(sub, inst, depth+1) }) {
+			if !slices.ContainsFunc(m.Value.([]any), func(sub any) bool { return s.valid(sub, inst, depth+1, base) }) {
 				add("anyOf", "value matches none of the alternatives")
 			}
 		case "not":
-			if s.valid(m.Value, inst, depth+1) {
+			if s.valid(m.Value, inst, depth+1, base) {
 				add("not", "value matches a schema it must not match")
 			}
 		case "if":
-			if s.valid(m.Value, inst, depth+1) {
+			if s.valid(m.Value, inst, depth+1, base) {
 				if then, ok := o.Get("then"); ok {
-					out = append(out, s.eval(then, inst, path, depth+1)...)
+					out = append(out, s.eval(then, inst, path, depth+1, base)...)
 				}
 			} else if els, ok := o.Get("else"); ok {
-				out = append(out, s.eval(els, inst, path, depth+1)...)
+				out = append(out, s.eval(els, inst, path, depth+1, base)...)
 			}
 		}
 	}

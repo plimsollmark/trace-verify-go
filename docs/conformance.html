@@ -45,10 +45,10 @@ ol.findings li { margin: 0 0 10px; max-width: 900px; }
 <div class="pins">Specification and schema: <code>agentrust-io/trace-spec</code> at <code>63f4d1500c24f837bd96a503a09860a49778e5bb</code>, schema SHA-256 <code>44778f700dae0216f18eda482457b1a9363aef8e8f92adb33d152c925781eea6</code>. Suite vectors: <code>agentrust-io/trace-tests</code> <code>v0.6.1</code>.</div>
 
 <div class="tiles">
-  <div class="tile"><div class="n">100 of 100</div><div class="l">vectors with an expectation agree</div></div>
+  <div class="tile"><div class="n">128 of 128</div><div class="l">vectors with an expectation agree</div></div>
   <div class="tile"><div class="n">0</div><div class="l">vectors disagree</div></div>
   <div class="tile"><div class="n">1</div><div class="l">run and shown without a verdict (the vector states none)</div></div>
-  <div class="tile"><div class="n">19 of 43</div><div class="l">rules whose deletion some vector notices</div></div>
+  <div class="tile"><div class="n">28 of 52</div><div class="l">rules whose deletion some vector notices</div></div>
 </div>
 
 <h2>Vector sets</h2>
@@ -59,13 +59,14 @@ ol.findings li { margin: 0 0 10px; max-width: 900px; }
 <tr><td><a href="#set-suite-canonicalization">suite canonicalization</a></td><td>the suite&#39;s copies of the four positive boundary records; TR-SIG-005 must pass</td><td>4 of 4</td></tr>
 <tr><td><a href="#set-suite-invalid_canonical">suite invalid_canonical</a></td><td>inputs outside the canonicalization domain: a lone surrogate, a non-finite number, integers beyond 2^53-1 (spec 3.2.2)</td><td>4 of 4</td></tr>
 <tr><td><a href="#set-delegation-link">delegation-link</a></td><td>delegation chains: the parent_record_hash pre-image (spec 3.1.3, normative) and the ten chain rules of the draft a2a-delegation-profile; records arrive in no order and the leaf is named by digest</td><td>48 of 48</td></tr>
+<tr><td><a href="#set-revocation-bundle">revocation-bundle</a></td><td>the consumer side of spec 3.2.3: verified against a bundle, unverified for revocation, no check performed, or rejected by a statement; the tighter of two age bounds governs</td><td>28 of 28</td></tr>
 <tr><td><a href="#set-suite-policy-resolution">suite policy-resolution</a></td><td>TR-POL-003: does the bundle at policy_uri hash to bundle_hash; each vector asserts that one finding, with a caller-supplied resolver and again without one</td><td>22 of 22</td></tr>
 <tr><td><a href="#set-suite-records">suite records</a></td><td>the suite&#39;s top-level records; they carry no expected block, so each expectation below is derived from the file name and the suite&#39;s documented rules, and says so</td><td>8 of 8</td></tr>
 </table></div>
 
 <h2 id="findings">Findings for the TRACE project</h2>
 <p class="small">From <code>PLAN.md</code>, where they are kept. Each is something a second implementation surfaced about the specification, the schema or the suite.</p>
-<ol class="findings"><li><strong>Embedded EC signatures have no stated encoding.</strong> 3.2.1 allows ES256 and ES384 for JWT contexts, and 3.2.2 defines the embedded <code>signature</code> as &#34;base64url, no padding&#34; over the canonical form, without saying whether an EC signature is raw <code>r || s</code> (as JWS uses) or DER. The suite verifies Ed25519 only (its TR-SIG-004 note), so no vector decides it. This verifier will accept Ed25519 and raw <code>r || s</code> for EC, state that choice, and ask.</li><li><strong>The suite&#39;s schema copy lags the spec&#39;s.</strong> <code>trace-tests/schemas/trace-claim.json</code> (SHA-256 <code>eed7f89e...</code>) lacks the spec schema&#39;s <code>canonicalizableValue</code> definition, which holds members a <code>cnf.jwk</code> may carry beyond the named ones to the safe-integer domain that 3.2.2 requires of &#34;every member&#34;. A record with such a member passes the suite&#39;s schema and fails the spec&#39;s.</li><li><strong>The verifier-compatibility README is behind the spec.</strong> It opens &#34;No normative text for them has been accepted&#34;, but spec 3.3 at the pinned commit carries that text (marked <code>CHANGED: #116</code>). The vectors and the spec agree; only the README is stale.</li><li><strong>Two of the verifier-compatibility refusals are not load-bearing for the rule they name.</strong> Vector 06 (empty accepted set) and vectors 07 and 11 (absent or empty profile) are refused by the plain membership check whether or not a verifier implements the specific rule, because an empty set and an absent profile both fail membership. Since the set makes <code>failure</code> informative, deleting either specific rule here changes no verdict. The vectors still test the outcome that matters (&#34;empty means nothing, never anything&#34;); what they cannot show is that the specific rule exists. This is the non-load-bearing case the suite&#39;s <code>conformance-method.md</code> describes, observed from a second implementation.</li><li><strong>The suite&#39;s docs are narrower than the schema on two digests.</strong> <code>TR-SCA-002</code> and <code>TR-TXN-001</code> are documented as <code>sha256:</code> only; the schema admits <code>sha384:</code> for <code>build_provenance.digest</code> and <code>tool_transcript.hash</code>. This verifier follows the schema, since the spec makes a disagreeing supporting artifact the defect.</li><li><strong>cMCP envelopes cannot be verified from the TRACE spec alone.</strong> 3.2.2 says only &#34;cMCP&#39;s RuntimeClaim (signature over the canonical record, key in trace.cnf.jwk)&#34;, without saying which object is the canonical record, and the suite&#39;s <code>valid_cmcp_runtime.json</code> carries a 20-character signature, which cannot be an Ed25519 signature under any reading. This verifier does not implement the cMCP envelope; the vector is run and reported without a verdict.</li><li><strong><code>valid_openshell_import.json</code> is invalid by the suite&#39;s own documented rule.</strong> Its <code>appraisal.verifier</code> is <code>nvidia-openshell/0.3.0</code>, which <code>docs/modules/tr-apr.md</code> gives, word for word, as the negative case for <code>TR-APR-002</code> (&#34;no scheme&#34;), and the schema requires <code>format: uri</code>. Either the file name or the record is wrong; this verifier rejects it. It is the shape of a record imported from NVIDIA OpenShell.</li><li><strong>The portable vectors distinguish few of the suite&#39;s named checks.</strong> Deleting a check from this verifier changes some vector&#39;s verdict for only <code>TR-ENV-001</code>, <code>TR-SIG-004</code>, <code>TR-SIG-005</code>, <code>TR-POL-003</code> and <code>TR-APR-002</code> (plus the spec-level rules). Of the other twenty named checks, nineteen are implemented here and are either subsumed by schema validation or have no JSON vector carrying their defect (the twentieth, <code>TR-ANC-002</code>, is phase 6), so a second implementation cannot show from the vectors alone that it performs them. The suite&#39;s own docs already list positive and negative cases for each (this repository runs them in <code>record/rules_test.go</code>); published as vectors, they would close the gap.</li><li><strong>The delegation corpus holds up from a second implementation.</strong> Written from the draft profile without its reference walk, this verifier agrees with all 24 vectors in the published record order and reversed, and deleting any one of the ten rules changes exactly its own two vectors. The corpus&#39;s claim of two load-bearing vectors per rule is confirmed independently, which is the measurement the profile&#39;s section 7 asks for.</li></ol>
+<ol class="findings"><li><strong>Embedded EC signatures have no stated encoding.</strong> 3.2.1 allows ES256 and ES384 for JWT contexts, and 3.2.2 defines the embedded <code>signature</code> as &#34;base64url, no padding&#34; over the canonical form, without saying whether an EC signature is raw <code>r || s</code> (as JWS uses) or DER. The suite verifies Ed25519 only (its TR-SIG-004 note), so no vector decides it. This verifier will accept Ed25519 and raw <code>r || s</code> for EC, state that choice, and ask.</li><li><strong>The suite&#39;s schema copy lags the spec&#39;s.</strong> <code>trace-tests/schemas/trace-claim.json</code> (SHA-256 <code>eed7f89e...</code>) lacks the spec schema&#39;s <code>canonicalizableValue</code> definition, which holds members a <code>cnf.jwk</code> may carry beyond the named ones to the safe-integer domain that 3.2.2 requires of &#34;every member&#34;. A record with such a member passes the suite&#39;s schema and fails the spec&#39;s.</li><li><strong>The verifier-compatibility README is behind the spec.</strong> It opens &#34;No normative text for them has been accepted&#34;, but spec 3.3 at the pinned commit carries that text (marked <code>CHANGED: #116</code>). The vectors and the spec agree; only the README is stale.</li><li><strong>Two of the verifier-compatibility refusals are not load-bearing for the rule they name.</strong> Vector 06 (empty accepted set) and vectors 07 and 11 (absent or empty profile) are refused by the plain membership check whether or not a verifier implements the specific rule, because an empty set and an absent profile both fail membership. Since the set makes <code>failure</code> informative, deleting either specific rule here changes no verdict. The vectors still test the outcome that matters (&#34;empty means nothing, never anything&#34;); what they cannot show is that the specific rule exists. This is the non-load-bearing case the suite&#39;s <code>conformance-method.md</code> describes, observed from a second implementation.</li><li><strong>The suite&#39;s docs are narrower than the schema on two digests.</strong> <code>TR-SCA-002</code> and <code>TR-TXN-001</code> are documented as <code>sha256:</code> only; the schema admits <code>sha384:</code> for <code>build_provenance.digest</code> and <code>tool_transcript.hash</code>. This verifier follows the schema, since the spec makes a disagreeing supporting artifact the defect.</li><li><strong>cMCP envelopes cannot be verified from the TRACE spec alone.</strong> 3.2.2 says only &#34;cMCP&#39;s RuntimeClaim (signature over the canonical record, key in trace.cnf.jwk)&#34;, without saying which object is the canonical record, and the suite&#39;s <code>valid_cmcp_runtime.json</code> carries a 20-character signature, which cannot be an Ed25519 signature under any reading. This verifier does not implement the cMCP envelope; the vector is run and reported without a verdict.</li><li><strong><code>valid_openshell_import.json</code> is invalid by the suite&#39;s own documented rule.</strong> Its <code>appraisal.verifier</code> is <code>nvidia-openshell/0.3.0</code>, which <code>docs/modules/tr-apr.md</code> gives, word for word, as the negative case for <code>TR-APR-002</code> (&#34;no scheme&#34;), and the schema requires <code>format: uri</code>. Either the file name or the record is wrong; this verifier rejects it. It is the shape of a record imported from NVIDIA OpenShell.</li><li><strong>The portable vectors distinguish few of the suite&#39;s named checks.</strong> Deleting a check from this verifier changes some vector&#39;s verdict for only <code>TR-ENV-001</code>, <code>TR-SIG-004</code>, <code>TR-SIG-005</code>, <code>TR-POL-003</code> and <code>TR-APR-002</code> (plus the spec-level rules). Of the other twenty named checks, nineteen are implemented here and are either subsumed by schema validation or have no JSON vector carrying their defect (the twentieth, <code>TR-ANC-002</code>, is phase 6), so a second implementation cannot show from the vectors alone that it performs them. The suite&#39;s own docs already list positive and negative cases for each (this repository runs them in <code>record/rules_test.go</code>); published as vectors, they would close the gap.</li><li><strong>The delegation corpus holds up from a second implementation.</strong> Written from the draft profile without its reference walk, this verifier agrees with all 24 vectors in the published record order and reversed, and deleting any one of the ten rules changes exactly its own two vectors. The corpus&#39;s claim of two load-bearing vectors per rule is confirmed independently, which is the measurement the profile&#39;s section 7 asks for.</li><li><strong>No revocation vector has a validly EC-signed bundle.</strong> Vectors 21 and 22 expect <code>bundle_signature_unsupported</code> for <code>ES256</code> and <code>ES384</code>, both of which the bundle schema admits. This verifier implements both and still agrees, because the trusted bundle key in those vectors is Ed25519, so the algorithm cannot fit the key. The set cannot tell &#34;not implemented&#34; from &#34;does not match the key&#34;, and a verifier that refused every EC bundle would pass it.</li></ol>
 
 <h2 id="rules">Which rules the vectors can tell apart</h2>
 <p class="small">Each rule is deleted in turn and the vectors are re-run: the bar is the number of vectors whose verdict changes. A rule no vector notices could be missing from an implementation that still passes every vector; the reason column says why, and where this repository tests it instead.</p>
@@ -74,27 +75,27 @@ ol.findings li { margin: 0 0 10px; max-width: 900px; }
 <tr><td class="nowrap"><code>accepted_profiles_nonempty</code></td><td>record</td><td class="nowrap"></td><td>0</td>
 <td><span class="bar zero" style="width:2px"></span>0<br><span class="small">redundant for the outcome: an empty set contains no profile, so profile_accepted refuses anyway; this rule names the cause, and verifier-compatibility makes the cause informative</span></td><td class="small">3.3 Verifier profile compatibility</td></tr>
 <tr><td class="nowrap"><code>accepted_profiles_implemented</code></td><td>record</td><td class="nowrap"></td><td>0</td>
-<td><span class="bar" style="width:12px"></span>2</td><td class="small">3.3 Verifier profile compatibility</td></tr>
+<td><span class="bar" style="width:7px"></span>2</td><td class="small">3.3 Verifier profile compatibility</td></tr>
 <tr><td class="nowrap"><code>json</code></td><td>record</td><td class="nowrap"></td><td>0</td>
-<td><span class="bar" style="width:202px"></span>39</td><td class="small">3.2.2 (RFC 8785, RFC 7493)</td></tr>
+<td><span class="bar" style="width:202px"></span>67</td><td class="small">3.2.2 (RFC 8785, RFC 7493)</td></tr>
 <tr><td class="nowrap"><code>integer_range</code></td><td>record</td><td class="nowrap"></td><td>0</td>
-<td><span class="bar" style="width:12px"></span>2</td><td class="small">3.2.2 Canonical form, numbers</td></tr>
+<td><span class="bar" style="width:7px"></span>2</td><td class="small">3.2.2 Canonical form, numbers</td></tr>
 <tr><td class="nowrap"><code>profile_present</code></td><td>record</td><td class="nowrap">TR-ENV-001</td><td>0</td>
 <td><span class="bar zero" style="width:2px"></span>0<br><span class="small">redundant for the outcome: an absent or empty profile is in no accepted set, so profile_accepted refuses anyway; same reason</span></td><td class="small">3.3 Verifier profile compatibility</td></tr>
 <tr><td class="nowrap"><code>profile_accepted</code></td><td>record</td><td class="nowrap">TR-ENV-001</td><td>0</td>
-<td><span class="bar" style="width:17px"></span>3</td><td class="small">3.3 Verifier profile compatibility; Changes from v0.1</td></tr>
+<td><span class="bar" style="width:10px"></span>3</td><td class="small">3.3 Verifier profile compatibility; Changes from v0.1</td></tr>
 <tr><td class="nowrap"><code>cnf_structure</code></td><td>record</td><td class="nowrap">TR-ENV-004</td><td>0</td>
 <td><span class="bar zero" style="width:2px"></span>0<br><span class="small">no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs&#39; cases</span></td><td class="small">3.1 cnf</td></tr>
 <tr><td class="nowrap"><code>cnf_public_only</code></td><td>record</td><td class="nowrap">TR-ENV-005</td><td>0</td>
 <td><span class="bar zero" style="width:2px"></span>0<br><span class="small">no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs&#39; cases</span></td><td class="small">3.1 cnf (RFC 8747); RFC 7517</td></tr>
 <tr><td class="nowrap"><code>cnf_key_type</code></td><td>record</td><td class="nowrap">TR-SIG-004</td><td>0</td>
-<td><span class="bar" style="width:68px"></span>13</td><td class="small">3.2.1 Signing and key management</td></tr>
+<td><span class="bar" style="width:124px"></span>41</td><td class="small">3.2.1 Signing and key management</td></tr>
 <tr><td class="nowrap"><code>signature</code></td><td>record</td><td class="nowrap">TR-SIG-005</td><td>0</td>
-<td><span class="bar" style="width:32px"></span>6</td><td class="small">3.2.2 Signature binding (embedded); 3.3 step 1</td></tr>
+<td><span class="bar" style="width:19px"></span>6</td><td class="small">3.2.2 Signature binding (embedded); 3.3 step 1</td></tr>
 <tr><td class="nowrap"><code>key_pinned</code></td><td>record</td><td class="nowrap"></td><td>0</td>
 <td><span class="bar zero" style="width:2px"></span>0<br><span class="small">no registered vector signs with a key other than its trusted_key; record/rules_test.go covers it</span></td><td class="small">verifier policy (Options.PinnedKeys); docs/trust-levels.md</td></tr>
 <tr><td class="nowrap"><code>schema</code></td><td>record</td><td class="nowrap"></td><td>0</td>
-<td><span class="bar" style="width:12px"></span>2</td><td class="small">Authority and conformance claims: schema/trace-claim.json</td></tr>
+<td><span class="bar" style="width:7px"></span>2</td><td class="small">Authority and conformance claims: schema/trace-claim.json</td></tr>
 <tr><td class="nowrap"><code>freshness</code></td><td>record</td><td class="nowrap">TR-ENV-002</td><td>0</td>
 <td><span class="bar zero" style="width:2px"></span>0<br><span class="small">every vector carries a fixed iat, so every set runs with freshness off; record/rules_test.go covers it</span></td><td class="small">3.2.2 Freshness; 3.3 step 2</td></tr>
 <tr><td class="nowrap"><code>nonce</code></td><td>record</td><td class="nowrap">TR-RTE-004</td><td>0</td>
@@ -108,11 +109,11 @@ ol.findings li { margin: 0 0 10px; max-width: 900px; }
 <tr><td class="nowrap"><code>TR-POL-002</code></td><td>record</td><td class="nowrap">TR-POL-002</td><td>0</td>
 <td><span class="bar zero" style="width:2px"></span>0<br><span class="small">no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs&#39; cases</span></td><td class="small">3.1 policy</td></tr>
 <tr><td class="nowrap"><code>TR-POL-003</code></td><td>record</td><td class="nowrap">TR-POL-003</td><td>0</td>
-<td><span class="bar" style="width:114px"></span>22</td><td class="small">schema: policy.policy_uri (format uri); trace-tests tr-pol.md</td></tr>
+<td><span class="bar" style="width:67px"></span>22</td><td class="small">schema: policy.policy_uri (format uri); trace-tests tr-pol.md</td></tr>
 <tr><td class="nowrap"><code>TR-APR-001</code></td><td>record</td><td class="nowrap">TR-APR-001</td><td>0</td>
 <td><span class="bar zero" style="width:2px"></span>0<br><span class="small">no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs&#39; cases</span></td><td class="small">3.1 appraisal (EAR)</td></tr>
 <tr><td class="nowrap"><code>TR-APR-002</code></td><td>record</td><td class="nowrap">TR-APR-002</td><td>0</td>
-<td><span class="bar" style="width:7px"></span>1</td><td class="small">3.1 appraisal; schema: appraisal.verifier (format uri)</td></tr>
+<td><span class="bar" style="width:4px"></span>1</td><td class="small">3.1 appraisal; schema: appraisal.verifier (format uri)</td></tr>
 <tr><td class="nowrap"><code>TR-APR-003</code></td><td>record</td><td class="nowrap">TR-APR-003</td><td>0</td>
 <td><span class="bar zero" style="width:2px"></span>0<br><span class="small">no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs&#39; cases</span></td><td class="small">schema: appraisal.policy_ref (format uri)</td></tr>
 <tr><td class="nowrap"><code>TR-APR-004</code></td><td>record</td><td class="nowrap">TR-APR-004</td><td>0</td>
@@ -137,26 +138,44 @@ ol.findings li { margin: 0 0 10px; max-width: 900px; }
 <td><span class="bar zero" style="width:2px"></span>0<br><span class="small">no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs&#39; cases</span></td><td class="small">3.1 transparency (SCITT receipt URI)</td></tr>
 <tr><td class="nowrap"><code>TR-ANC-002</code></td><td>record</td><td class="nowrap">TR-ANC-002</td><td>2</td>
 <td><span class="bar zero" style="width:2px"></span>0<br><span class="small">not implemented until PLAN.md phase 6; it reports unverified, never pass</span></td><td class="small">3.3 step 6; spec/registry-anchor-v1.md</td></tr>
+<tr><td class="nowrap"><code>bundle_present</code></td><td>revocation</td><td class="nowrap"></td><td>0</td>
+<td><span class="bar" style="width:7px"></span>2</td><td class="small">3.2.3 (a verifier with no bundle MUST report that it performed no revocation check)</td></tr>
+<tr><td class="nowrap"><code>bundle_malformed</code></td><td>revocation</td><td class="nowrap"></td><td>0</td>
+<td><span class="bar" style="width:7px"></span>2</td><td class="small">3.2.3; schema/trace-revocation-bundle.json</td></tr>
+<tr><td class="nowrap"><code>bundle_key_trusted</code></td><td>revocation</td><td class="nowrap"></td><td>0</td>
+<td><span class="bar" style="width:7px"></span>2</td><td class="small">3.2.3 (signing-key independence; the caller&#39;s trusted bundle keys)</td></tr>
+<tr><td class="nowrap"><code>bundle_signature_supported</code></td><td>revocation</td><td class="nowrap"></td><td>0</td>
+<td><span class="bar" style="width:7px"></span>2</td><td class="small">schema: sig.alg; 3.2.1</td></tr>
+<tr><td class="nowrap"><code>bundle_signature_valid</code></td><td>revocation</td><td class="nowrap"></td><td>0</td>
+<td><span class="bar" style="width:7px"></span>2</td><td class="small">schema: &#34;Signature over the RFC 8785 canonical form of this object with sig absent&#34;</td></tr>
+<tr><td class="nowrap"><code>key_revoked</code></td><td>revocation</td><td class="nowrap"></td><td>0</td>
+<td><span class="bar" style="width:16px"></span>5</td><td class="small">3.2.3 verifier rule and fallback for records with no usable receipt</td></tr>
+<tr><td class="nowrap"><code>bundle_not_from_future</code></td><td>revocation</td><td class="nowrap"></td><td>0</td>
+<td><span class="bar" style="width:10px"></span>3</td><td class="small">3.2.3 (bundles under the maximum-age model of 3.2.2)</td></tr>
+<tr><td class="nowrap"><code>bundle_fresh</code></td><td>revocation</td><td class="nowrap"></td><td>0</td>
+<td><span class="bar" style="width:25px"></span>8</td><td class="small">3.2.3 (an expired bundle is not a pass; tighter bound governs, both inclusive)</td></tr>
+<tr><td class="nowrap"><code>statements_counted</code></td><td>revocation</td><td class="nowrap"></td><td>0</td>
+<td><span class="bar" style="width:16px"></span>5</td><td class="small">evidence</td></tr>
 <tr><td class="nowrap"><code>record_signature_invalid</code></td><td>chain</td><td class="nowrap"></td><td>0</td>
-<td><span class="bar" style="width:22px"></span>4</td><td class="small">a2a-delegation-profile D-1</td></tr>
+<td><span class="bar" style="width:13px"></span>4</td><td class="small">a2a-delegation-profile D-1</td></tr>
 <tr><td class="nowrap"><code>root_key_untrusted</code></td><td>chain</td><td class="nowrap"></td><td>0</td>
-<td><span class="bar" style="width:22px"></span>4</td><td class="small">a2a-delegation-profile D-2</td></tr>
+<td><span class="bar" style="width:13px"></span>4</td><td class="small">a2a-delegation-profile D-2</td></tr>
 <tr><td class="nowrap"><code>depth_exceeded</code></td><td>chain</td><td class="nowrap"></td><td>0</td>
-<td><span class="bar" style="width:22px"></span>4</td><td class="small">a2a-delegation-profile D-4</td></tr>
+<td><span class="bar" style="width:13px"></span>4</td><td class="small">a2a-delegation-profile D-4</td></tr>
 <tr><td class="nowrap"><code>digest_algorithm_unsupported</code></td><td>chain</td><td class="nowrap"></td><td>0</td>
-<td><span class="bar" style="width:22px"></span>4</td><td class="small">a2a-delegation-profile D-10</td></tr>
+<td><span class="bar" style="width:13px"></span>4</td><td class="small">a2a-delegation-profile D-10</td></tr>
 <tr><td class="nowrap"><code>parent_not_found</code></td><td>chain</td><td class="nowrap"></td><td>0</td>
-<td><span class="bar" style="width:22px"></span>4</td><td class="small">a2a-delegation-profile D-3</td></tr>
+<td><span class="bar" style="width:13px"></span>4</td><td class="small">a2a-delegation-profile D-3</td></tr>
 <tr><td class="nowrap"><code>credential_unknown</code></td><td>chain</td><td class="nowrap"></td><td>0</td>
-<td><span class="bar" style="width:22px"></span>4</td><td class="small">a2a-delegation-profile D-5</td></tr>
+<td><span class="bar" style="width:13px"></span>4</td><td class="small">a2a-delegation-profile D-5</td></tr>
 <tr><td class="nowrap"><code>credential_issuer_mismatch</code></td><td>chain</td><td class="nowrap"></td><td>0</td>
-<td><span class="bar" style="width:22px"></span>4</td><td class="small">a2a-delegation-profile D-6</td></tr>
+<td><span class="bar" style="width:13px"></span>4</td><td class="small">a2a-delegation-profile D-6</td></tr>
 <tr><td class="nowrap"><code>credential_holder_mismatch</code></td><td>chain</td><td class="nowrap"></td><td>0</td>
-<td><span class="bar" style="width:22px"></span>4</td><td class="small">a2a-delegation-profile D-7</td></tr>
+<td><span class="bar" style="width:13px"></span>4</td><td class="small">a2a-delegation-profile D-7</td></tr>
 <tr><td class="nowrap"><code>credential_window</code></td><td>chain</td><td class="nowrap"></td><td>0</td>
-<td><span class="bar" style="width:22px"></span>4</td><td class="small">a2a-delegation-profile D-8</td></tr>
+<td><span class="bar" style="width:13px"></span>4</td><td class="small">a2a-delegation-profile D-8</td></tr>
 <tr><td class="nowrap"><code>data_class_widened</code></td><td>chain</td><td class="nowrap"></td><td>0</td>
-<td><span class="bar" style="width:22px"></span>4</td><td class="small">a2a-delegation-profile D-9</td></tr>
+<td><span class="bar" style="width:13px"></span>4</td><td class="small">a2a-delegation-profile D-9</td></tr>
 </table></div>
 
 <h2>Every vector</h2>
@@ -387,6 +406,94 @@ ol.findings li { margin: 0 0 10px; max-width: 900px; }
 <td><span class="st agree">✓ agrees</span>
 </td></tr>
 <tr><td class="file">24-parent-key-supplementary-plane.json#reversed</td><td>verified</td><td>verified</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+</table></div>
+<h3 id="set-revocation-bundle">revocation-bundle <span class="small">trace-spec/examples/revocation-bundle</span></h3>
+<div class="wrap"><table>
+<tr><th>Vector</th><th>Expected</th><th>This verifier</th><th>Result</th></tr>
+<tr><td class="file">01-fresh-well-inside-both-bounds.json</td><td>verified</td><td>verified</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">02-fresh-at-issuer-horizon.json</td><td>verified</td><td>verified</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">03-fresh-at-deployment-maximum.json</td><td>verified</td><td>verified</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">04-deployment-bound-tripped-wide.json</td><td>unverified_for_revocation (bundle_expired, deployment_bound_tripped)</td><td>unverified_for_revocation (bundle_expired, deployment_bound_tripped)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">05-deployment-bound-tripped-by-one-second.json</td><td>unverified_for_revocation (bundle_expired, deployment_bound_tripped)</td><td>unverified_for_revocation (bundle_expired, deployment_bound_tripped)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">06-issuer-bound-tripped-wide.json</td><td>unverified_for_revocation (bundle_expired, issuer_bound_tripped)</td><td>unverified_for_revocation (bundle_expired, issuer_bound_tripped)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">07-issuer-bound-tripped-by-one-second.json</td><td>unverified_for_revocation (bundle_expired, issuer_bound_tripped)</td><td>unverified_for_revocation (bundle_expired, issuer_bound_tripped)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">08-both-bounds-tripped-wide.json</td><td>unverified_for_revocation (bundle_expired, issuer_bound_tripped, deployment_bound_tripped)</td><td>unverified_for_revocation (bundle_expired, issuer_bound_tripped, deployment_bound_tripped)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">09-both-bounds-tripped-by-one-second.json</td><td>unverified_for_revocation (bundle_expired, issuer_bound_tripped, deployment_bound_tripped)</td><td>unverified_for_revocation (bundle_expired, issuer_bound_tripped, deployment_bound_tripped)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">10-empty-statements-is-evidence.json</td><td>verified</td><td>verified</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">11-statement-names-trusted-key-by-thumbprint.json</td><td>rejected (key_revoked)</td><td>rejected (key_revoked)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">12-statement-names-trusted-key-by-kid.json</td><td>rejected (key_revoked)</td><td>rejected (key_revoked)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">13-statement-names-a-different-key.json</td><td>verified</td><td>verified</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">14-no-bundle-no-check-performed.json</td><td>no_check_performed (no_check_performed)</td><td>no_check_performed (no_check_performed)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">15-signature-value-corrupted.json</td><td>unverified_for_revocation (bundle_signature_invalid)</td><td>unverified_for_revocation (bundle_signature_invalid)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">16-signed-bytes-do-not-match.json</td><td>unverified_for_revocation (bundle_signature_invalid)</td><td>unverified_for_revocation (bundle_signature_invalid)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">17-bundle-key-unknown-to-caller.json</td><td>unverified_for_revocation (bundle_key_untrusted)</td><td>unverified_for_revocation (bundle_key_untrusted)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">18-bundle-signed-by-record-key.json</td><td>unverified_for_revocation (bundle_key_untrusted)</td><td>unverified_for_revocation (bundle_key_untrusted)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">19-malformed-valid-until-absent.json</td><td>unverified_for_revocation (bundle_malformed)</td><td>unverified_for_revocation (bundle_malformed)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">20-malformed-statement-on-another-log.json</td><td>unverified_for_revocation (bundle_malformed)</td><td>unverified_for_revocation (bundle_malformed)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">21-signature-alg-es256-unsupported.json</td><td>unverified_for_revocation (bundle_signature_unsupported)</td><td>unverified_for_revocation (bundle_signature_unsupported)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">22-signature-alg-es384-unsupported.json</td><td>unverified_for_revocation (bundle_signature_unsupported)</td><td>unverified_for_revocation (bundle_signature_unsupported)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">23-issued-in-future-past-skew.json</td><td>unverified_for_revocation (bundle_issued_in_future)</td><td>unverified_for_revocation (bundle_issued_in_future)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">24-issued-in-future-by-a-day.json</td><td>unverified_for_revocation (bundle_issued_in_future)</td><td>unverified_for_revocation (bundle_issued_in_future)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">25-no-bundle-with-bundle-keys-configured.json</td><td>no_check_performed (no_check_performed)</td><td>no_check_performed (no_check_performed)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">26-stale-by-issuer-statement-still-rejects.json</td><td>rejected (key_revoked, statement_outlives_bundle)</td><td>rejected (key_revoked, statement_outlives_bundle)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">27-stale-by-deployment-statement-still-rejects.json</td><td>rejected (key_revoked, statement_outlives_bundle)</td><td>rejected (key_revoked, statement_outlives_bundle)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">28-future-issued-statement-still-rejects.json</td><td>rejected (key_revoked, statement_outlives_bundle)</td><td>rejected (key_revoked, statement_outlives_bundle)</td>
 <td><span class="st agree">✓ agrees</span>
 </td></tr>
 </table></div>

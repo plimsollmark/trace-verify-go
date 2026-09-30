@@ -25,3 +25,30 @@ func TraceClaim() (*Schema, error) {
 	once.Do(func() { compiled, compErr = Compile(TraceClaimV02) })
 	return compiled, compErr
 }
+
+// The revocation statement and bundle schemas (spec 3.2.3), from the same commit.
+//
+//go:embed trace-revocation.json
+var TraceRevocationV1 []byte
+
+//go:embed trace-revocation-bundle.json
+var TraceRevocationBundleV1 []byte
+
+// Their digests, as testdata/vectors/PROVENANCE.md records them.
+const (
+	TraceRevocationV1SHA256       = "a25ee0ba7df0098e38dbe4448cd6e6ac22ec723ec5d7d479728aacbbdf81a062"
+	TraceRevocationBundleV1SHA256 = "1229dba26b8d4b28deb4c3f052631bf9766183e956ba518ba7ac83c1d023fc5b"
+)
+
+var (
+	bundleOnce     sync.Once
+	bundleCompiled *Schema
+	bundleErr      error
+)
+
+// RevocationBundle returns the compiled bundle schema, with the statement schema it
+// references.
+func RevocationBundle() (*Schema, error) {
+	bundleOnce.Do(func() { bundleCompiled, bundleErr = Compile(TraceRevocationBundleV1, TraceRevocationV1) })
+	return bundleCompiled, bundleErr
+}

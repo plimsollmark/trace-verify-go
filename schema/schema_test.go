@@ -100,7 +100,7 @@ func TestCompileRefusesUnknownKeywords(t *testing.T) {
 		`{"properties":{"a":{"uniqueItems":true}}}`,
 		`{"format":"email"}`,
 		`{"$ref":"#/$defs/missing"}`,
-		`{"$ref":"https://example.org/other.json"}`,
+		`{"$ref":"https://example.org/other.json"}`, // no loaded document has that $id
 		`{"pattern":"(?=a)"}`,
 	} {
 		if _, err := Compile([]byte(doc)); err == nil {
@@ -119,6 +119,22 @@ func TestEmbeddedSchemaIsThePinnedOne(t *testing.T) {
 		t.Fatalf("embedded schema differs from the vendored copy (%v)", err)
 	}
 	if _, err := TraceClaim(); err != nil {
+		t.Fatal(err)
+	}
+	for name, c := range map[string]struct {
+		b   []byte
+		sum string
+	}{
+		"trace-revocation.json":        {TraceRevocationV1, TraceRevocationV1SHA256},
+		"trace-revocation-bundle.json": {TraceRevocationBundleV1, TraceRevocationBundleV1SHA256},
+	} {
+		d := sha256.Sum256(c.b)
+		v, _ := os.ReadFile(filepath.Join(vectors, "schema", name))
+		if hex.EncodeToString(d[:]) != c.sum || !bytes.Equal(v, c.b) {
+			t.Errorf("%s: embedded copy is not the vendored, pinned one", name)
+		}
+	}
+	if _, err := RevocationBundle(); err != nil {
 		t.Fatal(err)
 	}
 }

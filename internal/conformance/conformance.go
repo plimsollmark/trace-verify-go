@@ -16,6 +16,7 @@ import (
 
 	"github.com/plimsollmark/trace-verify-go/chain"
 	"github.com/plimsollmark/trace-verify-go/record"
+	"github.com/plimsollmark/trace-verify-go/revocation"
 )
 
 // Expect is what a vector requires.
@@ -186,12 +187,15 @@ func stem(path string) string { return strings.TrimSuffix(filepath.Base(path), "
 
 // Registry holds every verifier's rules, so the mutation check can delete any one.
 type Registry struct {
-	Record []record.Rule
-	Chain  []chain.Rule
+	Record     []record.Rule
+	Chain      []chain.Rule
+	Revocation []revocation.Rule
 }
 
 // Default is the registry the verifiers ship with.
-func Default() Registry { return Registry{Record: record.Rules, Chain: chain.Rules} }
+func Default() Registry {
+	return Registry{Record: record.Rules, Chain: chain.Rules, Revocation: revocation.Rules}
+}
 
 // Observed is what a verifier reported for one case.
 type Observed struct {
