@@ -61,7 +61,8 @@ func loadReproducibility(root, dir string) ([]Case, error) {
 			codes = []string{}
 		}
 		rec, ctx := v.Record, v.Context
-		opts := record.Options{Mode: record.ModeVerify, AcceptedProfiles: []string{record.ProfileV02}, SkipFreshness: true}
+		// The vector names no trusted key: its expectation is the binding under cnf alone.
+		opts := record.Options{Mode: record.ModeVerify, AcceptedProfiles: []string{record.ProfileV02}, SkipFreshness: true, TrustEmbeddedKey: true}
 		cases = append(cases, Case{
 			File: rel(root, p),
 			Name: v.Name,

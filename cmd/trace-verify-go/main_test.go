@@ -59,11 +59,18 @@ func TestWrongPreimageRejected(t *testing.T) {
 	}
 }
 
-func TestUnpinnedKeyIsSaidOutLoud(t *testing.T) {
+// With no key pinned the issuer is not authenticated, so the record is not VERIFIED
+// unless the caller says to trust its embedded key.
+func TestUnpinnedKeyIsUnverified(t *testing.T) {
 	rec, _ := extract(t, "trace-spec/examples/canonicalization-boundary/01-non-ascii-values.json")
 	code, out := runCLI(t, "-archived", rec)
-	if code != 0 || !strings.Contains(out, "no keys pinned: the signature authenticates only the record's own cnf key") {
+	if code != 1 || !strings.Contains(out, "UNVERIFIED (issuer_not_authenticated)") ||
+		!strings.Contains(out, "no keys pinned: the signature authenticates only the record's own cnf key") {
 		t.Fatalf("exit %d\n%s", code, out)
+	}
+	code, out = runCLI(t, "-archived", "-trust-embedded-key", rec)
+	if code != 0 || !strings.Contains(out, "VERIFIED") {
+		t.Fatalf("-trust-embedded-key: exit %d\n%s", code, out)
 	}
 }
 

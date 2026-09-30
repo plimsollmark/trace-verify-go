@@ -239,7 +239,14 @@ var Rules = []Rule{
 				return skip("no usable cnf key")
 			}
 			if len(s.opts.PinnedKeys) == 0 {
-				return skip("no keys pinned: the signature authenticates only the record's own cnf key, not its issuer")
+				const why = "no keys pinned: the signature authenticates only the record's own cnf key, not its issuer"
+				// docs/trust-levels.md: "the key embedded in an incoming record cannot
+				// establish its own authority". Spec 3.3 step 1 read alone would accept
+				// it; this verifier makes that an explicit choice (TrustEmbeddedKey).
+				if s.opts.Mode == ModeVerify && !s.opts.TrustEmbeddedKey {
+					return unverified("issuer_not_authenticated", why)
+				}
+				return skip(why)
 			}
 			if !slices.Contains(s.opts.PinnedKeys, s.key.Thumbprint()) {
 				return failf("key_not_pinned", "cnf key %s is not a pinned key", s.key.Thumbprint())

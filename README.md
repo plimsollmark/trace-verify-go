@@ -24,8 +24,11 @@ go run ./cmd/trace-conformance                               # rerun every vecto
 ```
 
 `trace-verify-go` exits 0 when the record is verified (or meets the level), 1 otherwise,
-and 2 on a usage or input error. Without `-pin` or `-pin-jwk` it says, in its output,
-that the signature authenticates only the record's own key and not its issuer.
+and 2 on a usage or input error. The issuer is authenticated only by a pinned key
+(`-pin` or `-pin-jwk`): without one, the signature authenticates only the record's own
+key, so the spec's verification reports UNVERIFIED (`issuer_not_authenticated`) and exits
+1. `-trust-embedded-key` accepts the record's own key instead, for a key established by
+other means; the output still says the issuer was not authenticated.
 
 The conformance page, [docs/conformance.html](docs/conformance.html), shows every
 vector's expected and actual verdict, which rules the vectors can tell apart, and the

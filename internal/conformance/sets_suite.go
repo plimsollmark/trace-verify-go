@@ -123,7 +123,8 @@ func loadSuiteRecords(root, dir string) ([]Case, error) {
 		if err != nil {
 			return nil, err
 		}
-		opts := record.Options{Mode: e.mode, Level: e.level, SkipFreshness: true, AcceptedProfiles: []string{record.ProfileV02}}
+		// The vector names no trusted key: its expectation is the binding under cnf alone.
+		opts := record.Options{Mode: e.mode, Level: e.level, SkipFreshness: true, AcceptedProfiles: []string{record.ProfileV02}, TrustEmbeddedKey: true}
 		c := Case{
 			File:   rel(root, p),
 			Name:   name,

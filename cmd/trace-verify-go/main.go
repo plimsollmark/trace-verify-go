@@ -3,7 +3,9 @@
 //	trace-verify-go [flags] record.json      (or - for standard input)
 //
 // By default it performs the specification's verification (spec 3.3): the signature
-// binding first, then every claim. With -level N it performs the conformance suite's
+// binding first, then every claim. The issuer is authenticated only by a pinned key
+// (-pin or -pin-jwk); with none, the result is unverified unless -trust-embedded-key
+// says to accept the record's own cnf key. With -level N it performs the conformance suite's
 // level check instead. Exit status: 0 verified (or the level is met), 1 anything else
 // (rejected, refused, or unverified), 2 a usage or input error.
 package main
@@ -40,6 +42,7 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	fs.Var(&accept, "accept", "a `profile` the verifier accepts (repeatable; default the v0.2 profile)")
 	fs.Var(&pins, "pin", "an RFC 7638 `thumbprint` of a trusted signing key (repeatable)")
 	fs.Var(&pinFiles, "pin-jwk", "a `file` holding a trusted public JWK (repeatable)")
+	trustEmbedded := fs.Bool("trust-embedded-key", false, "with no key pinned, accept the record's own cnf key as its issuer's (no issuer authentication; without a pin or this flag the result is UNVERIFIED)")
 	now := fs.Int64("now", 0, "verification time in Unix `seconds` (default: the current time)")
 	archived := fs.Bool("archived", false, "do not apply the age bounds to iat (checking an archived record)")
 	maxAge := fs.Duration("max-age", 0, "maximum record age (default 24h, spec 3.2.2)")
@@ -73,8 +76,8 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return 2
 	}
 
-	opts := record.Options{AcceptedProfiles: accept, PinnedKeys: pins, SkipFreshness: *archived,
-		MaxAge: *maxAge, ClockSkew: *skew, Nonce: *nonce}
+	opts := record.Options{AcceptedProfiles: accept, PinnedKeys: pins, TrustEmbeddedKey: *trustEmbedded,
+		SkipFreshness: *archived, MaxAge: *maxAge, ClockSkew: *skew, Nonce: *nonce}
 	if len(opts.AcceptedProfiles) == 0 {
 		opts.AcceptedProfiles = []string{record.ProfileV02}
 	}

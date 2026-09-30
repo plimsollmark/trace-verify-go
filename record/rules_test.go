@@ -80,7 +80,7 @@ func TestBaseRecordPassesThroughLevel2(t *testing.T) {
 			t.Errorf("%s: %s %s %s", f.Rule, f.Status, f.Code, f.Detail)
 		}
 	}
-	if v := Verify(build(t, nil), Options{Now: testNow, AcceptedProfiles: []string{ProfileV02}}); v.Outcome != Verified {
+	if v := Verify(build(t, nil), Options{Now: testNow, AcceptedProfiles: []string{ProfileV02}, TrustEmbeddedKey: true}); v.Outcome != Verified {
 		t.Fatalf("ModeVerify: %s %s", v.Outcome, v.Code)
 	}
 }
@@ -226,7 +226,9 @@ func TestVerifyModeGatesClaimsBehindTheSignature(t *testing.T) {
 }
 
 func TestVerifyModeOutcomes(t *testing.T) {
-	opts := func() Options { return Options{Now: testNow, AcceptedProfiles: []string{ProfileV02}} }
+	opts := func() Options {
+		return Options{Now: testNow, AcceptedProfiles: []string{ProfileV02}, TrustEmbeddedKey: true}
+	}
 	if r := Verify(build(t, func(r map[string]any) { delete(r, "signature") }), opts()); r.Outcome != Rejected || r.Code != "signature_absent" {
 		t.Errorf("unsigned: %s %s", r.Outcome, r.Code)
 	}
@@ -339,11 +341,28 @@ func TestKeyPinnedNeedsAVerifiedSignature(t *testing.T) {
 		t.Fatalf("unsigned record under a pinned key: key_pinned %+v", f)
 	}
 	signed := build(t, nil)
-	var pinned string
-	if r := Verify(signed, Options{Now: testNow, AcceptedProfiles: []string{ProfileV02}}); r.Outcome == Verified {
-		pinned = r.KeyThumbprint
+	opts := Options{Now: testNow, AcceptedProfiles: []string{ProfileV02}}
+	// No key pinned: the signature holds, but only under the record's own key, which
+	// cannot establish its own authority (docs/trust-levels.md).
+	r := Verify(signed, opts)
+	if f, _ := r.Finding("key_pinned"); r.Outcome != OutcomeUnverified || r.Code != "issuer_not_authenticated" || f.Status != Unverified {
+		t.Fatalf("no key pinned: %s %s, key_pinned %+v", r.Outcome, r.Code, f)
 	}
-	r := Verify(signed, Options{Now: testNow, AcceptedProfiles: []string{ProfileV02}, PinnedKeys: []string{pinned}})
+	pinned := r.KeyThumbprint
+	// Trusting the embedded key is an explicit choice, and is reported as a skip.
+	o := opts
+	o.TrustEmbeddedKey = true
+	r = Verify(signed, o)
+	if f, _ := r.Finding("key_pinned"); r.Outcome != Verified || f.Status != Skip {
+		t.Fatalf("embedded key trusted: %s %s, key_pinned %+v", r.Outcome, r.Code, f)
+	}
+	// The level check does not name issuer pinning, so it is skipped there.
+	if f, _ := CheckLevel(signed, 1, Options{Now: testNow}).Finding("key_pinned"); f.Status != Skip {
+		t.Fatalf("level check, no key pinned: key_pinned %+v", f)
+	}
+	o = opts
+	o.PinnedKeys = []string{pinned}
+	r = Verify(signed, o)
 	if f, _ := r.Finding("key_pinned"); r.Outcome != Verified || f.Status != Pass {
 		t.Fatalf("signed under a pinned key: %s %s, key_pinned %+v", r.Outcome, r.Code, f)
 	}

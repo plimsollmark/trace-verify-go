@@ -192,7 +192,8 @@ func loadSuiteCanonicalization(root, dir string) ([]Case, error) {
 		if v.ExpectedTRSig != "PASS" {
 			return nil, fmt.Errorf("%s: expected_tr_sig %q: this adapter only knows PASS", p, v.ExpectedTRSig)
 		}
-		opts := record.Options{AcceptedProfiles: []string{record.ProfileV02}, SkipFreshness: true}
+		// The vector names no trusted key: its expectation is the binding under cnf alone.
+		opts := record.Options{AcceptedProfiles: []string{record.ProfileV02}, SkipFreshness: true, TrustEmbeddedKey: true}
 		rec := v.Record
 		cases = append(cases, Case{
 			File:   rel(root, p),
@@ -239,7 +240,8 @@ func loadSuiteInvalidCanonical(root, dir string) ([]Case, error) {
 		if err != nil {
 			return nil, err
 		}
-		opts := record.Options{AcceptedProfiles: []string{record.ProfileV02}, SkipFreshness: true}
+		// The vector names no trusted key: its expectation is the binding under cnf alone.
+		opts := record.Options{AcceptedProfiles: []string{record.ProfileV02}, SkipFreshness: true, TrustEmbeddedKey: true}
 		cases = append(cases, Case{
 			File:   rel(root, p),
 			Name:   name,

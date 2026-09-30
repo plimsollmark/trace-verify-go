@@ -140,8 +140,16 @@ type Options struct {
 	// trusts; a record whose cnf key is not among them is rejected. With none pinned,
 	// the signature authenticates only the record's own key: "the key embedded in an
 	// incoming record cannot establish its own authority" (trace-spec
-	// docs/trust-levels.md), and the key_pinned finding says so.
+	// docs/trust-levels.md). ModeVerify then reports key_pinned unverified, so the
+	// outcome is not Verified, unless TrustEmbeddedKey is set. ModeLevel reports it
+	// skipped: the suite's level check does not name issuer pinning.
 	PinnedKeys []string
+
+	// TrustEmbeddedKey accepts the record's own cnf key as its issuer's when no key is
+	// pinned: the spec's step 1 alone ("verifies against the key in cnf"), with no
+	// issuer authentication. key_pinned is then reported skipped, never passed. Use it
+	// only where the key was established by other means.
+	TrustEmbeddedKey bool
 
 	// ResolvePolicy, when set, fetches the bundle a record's policy.policy_uri names, for
 	// TR-POL-003. It is supplied by the caller and never derived from the record: "a

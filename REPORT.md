@@ -50,7 +50,7 @@ The eight steps of spec 3.3:
 
 | Step | Here |
 |---|---|
-| 1. Signature binding before any field is trusted | Yes, for the embedded form (3.2.2), with Ed25519 keys, and ES256 and ES384 keys under the reading finding 1 asks about. The enveloping forms are refused (finding 18). |
+| 1. Signature binding before any field is trusted | Yes, for the embedded form (3.2.2), with Ed25519 keys, and ES256 and ES384 keys under the reading finding 1 asks about. The enveloping forms are refused (finding 18). The signing key must also be one the caller pinned: a record whose own `cnf` key is all that verifies it is reported unverified, not verified, unless the caller explicitly trusts the embedded key (`docs/trust-levels.md`: the embedded key "cannot establish its own authority"). |
 | 2. Freshness, and the challenge nonce | Yes: maximum age, clock skew and the nonce echo, with the spec's defaults. |
 | 3. Signature chain to a silicon root | **No.** A v0.2 record carries no attestation evidence to check; the draft runtime-evidence profile proposes some, and its vectors are refused here as v0.3 records. |
 | 4. Runtime measurements against RIMs | **No.** `runtime.rim_uri` is resolved as a citation (3.1.2) and never treated as evidence. |
