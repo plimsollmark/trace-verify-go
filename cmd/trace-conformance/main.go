@@ -306,7 +306,7 @@ ol.findings li { margin: 0 0 10px; max-width: 900px; }
 <div class="wrap"><table>
 <tr><th>Vector</th><th>Expected</th><th>This verifier</th><th>Result</th></tr>
 {{range .Rows}}<tr><td class="file">{{.File}}</td><td>{{.Expected}}{{if .Source}}<br><span class="small">{{.Source}}</span>{{end}}</td><td>{{.Got}}</td>
-<td>{{if eq .State "agree"}}<span class="st agree">✓ agrees</span>{{else if eq .State "disagree"}}<span class="st disagree">✗ disagrees</span>{{else}}<span class="st none">– no expectation</span>{{end}}
+<td>{{if eq .State "agree"}}<span class="st agree">✓ agrees</span>{{else if eq .State "disagree"}}<span class="st disagree">✗ disagrees</span>{{else}}<span class="st none">· no expectation</span>{{end}}
 {{range .Problems}}<br><span class="small">{{.}}</span>{{end}}{{range .Notes}}<br><span class="small">note: {{.}}</span>{{end}}</td></tr>
 {{end}}</table></div>
 {{end}}
