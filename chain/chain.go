@@ -12,6 +12,7 @@ import (
 	"crypto/sha512"
 	"encoding/hex"
 	"fmt"
+	"regexp"
 	"slices"
 	"strings"
 
@@ -186,13 +187,13 @@ func Digest(alg string, rec *jcs.Object) (string, error) {
 }
 
 // delegation reads a record's link. A record whose delegation is absent or null is a
-// root.
+// root; any other value is a link, which delegation_malformed judges.
 func delegation(rec *jcs.Object) (link, credential string, root bool) {
 	v, ok := rec.Get("delegation")
-	d, isObj := v.(*jcs.Object)
-	if !ok || !isObj {
+	if !ok || v == nil {
 		return "", "", true
 	}
+	d, _ := v.(*jcs.Object)
 	l, _ := d.Get("parent_record_hash")
 	c, _ := d.Get("credential_id")
 	link, _ = l.(string)
@@ -212,7 +213,34 @@ func integer(o *jcs.Object, name string) (int64, bool) {
 	return int64(n.Float), ok && float64(int64(n.Float)) == n.Float
 }
 
-// Rules is the registry: the proposal's D-1 to D-10.
+// wellFormedLink is an algorithm name and a lowercase hex value. The schema pins the
+// algorithm to sha256 or sha384; any other well-formed name is left to D-10, which the
+// proposal (section 4.3) keeps for a link a verifier cannot compute.
+var wellFormedLink = regexp.MustCompile(`^[a-z0-9]+:[0-9a-f]+$`)
+
+// malformed says why a record's delegation block is not a link, or "" if it is one (or
+// the record is a root).
+func malformed(rec *jcs.Object) string {
+	v, ok := rec.Get("delegation")
+	if !ok || v == nil {
+		return ""
+	}
+	d, isObj := v.(*jcs.Object)
+	if !isObj {
+		return "delegation is not an object"
+	}
+	if l, _ := d.Get("parent_record_hash"); !wellFormedLink.MatchString(fmt.Sprint(l)) {
+		return "parent_record_hash is absent or not an algorithm and lowercase hex digest"
+	}
+	if c, _ := d.Get("credential_id"); c == nil || fmt.Sprint(c) == "" {
+		return "credential_id is absent or empty"
+	} else if _, isStr := c.(string); !isStr {
+		return "credential_id is not a string"
+	}
+	return ""
+}
+
+// Rules is the registry: the proposal's D-1 to D-10, and the link's own shape.
 var Rules = []Rule{
 	{Code: "record_signature_invalid", Class: ProvenanceInvalid, Scope: OnRecord, Section: "D-1",
 		Check: func(_ *Context, h *Hop) string {
@@ -234,6 +262,12 @@ var Rules = []Rule{
 			}
 			return ""
 		}},
+	{Code: "delegation_malformed", Class: ProvenanceInvalid, Scope: OnLink, Section: "schema delegation (parent_record_hash, credential_id); 3.1.3",
+		Check: func(_ *Context, h *Hop) string {
+			// A broken link is not a root and not an unreadable link: read either way, a
+			// producer could soften a bad link into "could not read" or drop its parent.
+			return malformed(h.Child)
+		}},
 	{Code: "depth_exceeded", Class: AuthorizationInvalid, Scope: OnLink, Section: "D-4",
 		Check: func(c *Context, h *Hop) string {
 			if h.Depth > c.MaxDepth {
@@ -243,6 +277,9 @@ var Rules = []Rule{
 		}},
 	{Code: "digest_algorithm_unsupported", Class: Unverifiable, Scope: OnLink, Section: "D-10",
 		Check: func(c *Context, h *Hop) string {
+			if malformed(h.Child) != "" {
+				return "" // delegation_malformed reports it
+			}
 			if alg, _, _ := strings.Cut(h.Link, ":"); !slices.Contains(c.SupportedDigests, alg) {
 				return fmt.Sprintf("link %d names %q, which this verifier does not compute", h.Depth, alg)
 			}
@@ -250,8 +287,9 @@ var Rules = []Rule{
 		}},
 	{Code: "parent_not_found", Class: ProvenanceInvalid, Scope: OnLink, Section: "D-3",
 		Check: func(c *Context, h *Hop) string {
-			// Guarded on algorithm support, so this and D-10 never fire for one link.
-			if alg, _, _ := strings.Cut(h.Link, ":"); !slices.Contains(c.SupportedDigests, alg) {
+			// Guarded on algorithm support, so this and D-10 never fire for one link, and
+			// on the link's shape, which delegation_malformed reports.
+			if alg, _, _ := strings.Cut(h.Link, ":"); malformed(h.Child) != "" || !slices.Contains(c.SupportedDigests, alg) {
 				return ""
 			}
 			if h.Parent == nil {

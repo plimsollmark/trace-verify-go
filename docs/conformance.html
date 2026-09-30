@@ -48,7 +48,7 @@ ol.findings li { margin: 0 0 10px; max-width: 900px; }
   <div class="tile"><div class="n">262 of 262</div><div class="l">judged cases agree, from 216 vector files (a file run more than once is several cases)</div></div>
   <div class="tile"><div class="n">0</div><div class="l">cases disagree</div></div>
   <div class="tile"><div class="n">1</div><div class="l">run and shown without a verdict (the vector states none)</div></div>
-  <div class="tile"><div class="n">80 of 109</div><div class="l">rules whose deletion some vector notices</div></div>
+  <div class="tile"><div class="n">80 of 110</div><div class="l">rules whose deletion some vector notices</div></div>
 </div>
 
 <h2>Vector sets</h2>
@@ -227,6 +227,8 @@ ol.findings li { margin: 0 0 10px; max-width: 900px; }
 <td><span class="bar" style="width:8px"></span>4</td><td class="small">a2a-delegation-profile D-1</td></tr>
 <tr><td class="nowrap"><code>root_key_untrusted</code></td><td>chain</td><td class="nowrap"></td><td>0</td>
 <td><span class="bar" style="width:8px"></span>4</td><td class="small">a2a-delegation-profile D-2</td></tr>
+<tr><td class="nowrap"><code>delegation_malformed</code></td><td>chain</td><td class="nowrap"></td><td>0</td>
+<td><span class="bar zero" style="width:2px"></span>0<br><span class="small">every delegation-link vector&#39;s link is well formed; chain/chain_test.go covers it</span></td><td class="small">a2a-delegation-profile schema delegation (parent_record_hash, credential_id); 3.1.3</td></tr>
 <tr><td class="nowrap"><code>depth_exceeded</code></td><td>chain</td><td class="nowrap"></td><td>0</td>
 <td><span class="bar" style="width:8px"></span>4</td><td class="small">a2a-delegation-profile D-4</td></tr>
 <tr><td class="nowrap"><code>digest_algorithm_unsupported</code></td><td>chain</td><td class="nowrap"></td><td>0</td>

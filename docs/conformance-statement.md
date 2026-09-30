@@ -43,7 +43,7 @@ and policy-resolution vectors with and without a resolver.
 ## What the vectors can tell apart
 
 Deleting one rule at a time and rerunning every vector, the method of trace-spec
-`docs/conformance-method.md`: 80 of this verifier's 109 rules change some vector's verdict. The
+`docs/conformance-method.md`: 80 of this verifier's 110 rules change some vector's verdict. The
 others are listed, each with the reason no vector notices it, on the conformance page.
 
 ## Scope

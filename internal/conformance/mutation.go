@@ -104,6 +104,7 @@ var Uncovered = map[string]string{
 	"cnf_structure":               "no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs' cases",
 	"cnf_public_only":             "no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs' cases",
 	"key_pinned":                  "no registered vector signs with a key other than its trusted_key; record/rules_test.go covers it",
+	"delegation_malformed":        "every delegation-link vector's link is well formed; chain/chain_test.go covers it",
 	"freshness":                   "every vector carries a fixed iat, so every set runs with freshness off; record/rules_test.go covers it",
 	"nonce":                       "no registered vector issues a challenge nonce; record/rules_test.go covers it",
 	"origin_platform":             "the schema's if/then encodes spec 3.1.1 as well, and the one vector with origin (valid_openshell_import) is rejected on other grounds; record/rules_test.go covers it",
