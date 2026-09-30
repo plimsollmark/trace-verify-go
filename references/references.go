@@ -103,8 +103,13 @@ var Steps = []Step{
 			seq, ok := strings.CutPrefix(str(in.Reference, "id"), "audit/")
 			n, err := strconv.Atoi(seq)
 			for _, e := range in.Log {
-				if s, isNum := e.Get("seq"); ok && err == nil && isNum && s.(jcs.Number).Float == float64(n) {
-					in.target = e
+				// The log comes from the resolver, not the signed record, so a seq of the
+				// wrong type is a non-match, never a crash (3.1.2 rule 3: a reference
+				// never rejects the record).
+				if s, found := e.Get("seq"); ok && err == nil && found {
+					if num, isNum := s.(jcs.Number); isNum && num.Float == float64(n) {
+						in.target = e
+					}
 				}
 			}
 			f.Resolves = yes(in.target != nil)
@@ -126,7 +131,8 @@ var Steps = []Step{
 				return
 			}
 			env, _ := in.target.Get("envelope")
-			f.Decision = str(env.(*jcs.Object), "method")
+			o, _ := env.(*jcs.Object) // absent or not an object: no method, so not an approval
+			f.Decision = str(o, "method")
 		}},
 }
 
