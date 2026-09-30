@@ -92,6 +92,17 @@ type GapRule struct {
 	Check       func(*gapState)
 }
 
+// Weaken is Rule.Weaken for a disclosure rule.
+func (r GapRule) Weaken() GapRule {
+	check := r.Check
+	r.Check = func(s *gapState) {
+		nf, nw := len(s.failures), len(s.warnings)
+		check(s)
+		s.failures, s.warnings = s.failures[:nf], s.warnings[:nw]
+	}
+	return r
+}
+
 // VerifyGap checks one disclosure.
 func VerifyGap(disclosure []byte, ctx GapContext) GapResult {
 	return VerifyGapWith(GapRules, disclosure, ctx)

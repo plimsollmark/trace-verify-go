@@ -57,7 +57,7 @@ type setView struct {
 
 type ruleView struct {
 	ID, Suite, Section, Reason, Verifier string
-	Level, Changed                       int
+	Level, Weakened, Deleted             int
 	Width                                int // bar width in pixels
 }
 
@@ -116,12 +116,12 @@ func run(root, reportPath, out, statementOut string) (disagree int, err error) {
 	cov := conformance.Mutation(root, conformance.Sets, conformance.Default())
 	most := 1
 	for _, c := range cov {
-		most = max(most, len(c.Changed))
+		most = max(most, len(c.Weakened))
 	}
 	for _, c := range cov {
 		rv := ruleView{ID: c.ID, Suite: c.Suite, Section: c.Section, Level: c.Level, Verifier: c.Verifier,
-			Changed: len(c.Changed), Width: 2 + 200*len(c.Changed)/most}
-		if len(c.Changed) == 0 {
+			Weakened: len(c.Weakened), Deleted: len(c.Changed), Width: 2 + 200*len(c.Weakened)/most}
+		if !c.Distinguished() {
 			rv.Reason = conformance.Uncovered[c.ID]
 		} else {
 			p.Distinguished++
@@ -155,7 +155,7 @@ func run(root, reportPath, out, statementOut string) (disagree int, err error) {
 			return 0, err
 		}
 	}
-	fmt.Printf("%s: %d of %d judged cases agree (from %d vector files), %d reported without an expectation; %d of %d rules distinguished by a vector\n",
+	fmt.Printf("%s: %d of %d judged cases agree (from %d vector files), %d reported without an expectation; %d of %d rules distinguished by a vector (weakened)\n",
 		out, p.Agree, p.Judged, p.Files, p.None, p.Distinguished, p.Rules)
 	return p.Disagree, nil
 }
@@ -280,7 +280,7 @@ ol.findings li { margin: 0 0 10px; max-width: 900px; }
   <div class="tile"><div class="n">{{.Agree}} of {{.Judged}}</div><div class="l">judged cases agree, from {{.Files}} vector files (a file run more than once is several cases)</div></div>
   <div class="tile"><div class="n">{{.Disagree}}</div><div class="l">cases disagree</div></div>
   <div class="tile"><div class="n">{{.None}}</div><div class="l">run and shown without a verdict (the vector states none)</div></div>
-  <div class="tile"><div class="n">{{.Distinguished}} of {{.Rules}}</div><div class="l">rules whose deletion some vector notices</div></div>
+  <div class="tile"><div class="n">{{.Distinguished}} of {{.Rules}}</div><div class="l">rules some vector notices weakened</div></div>
 </div>
 
 <h2>Vector sets</h2>
@@ -294,11 +294,11 @@ ol.findings li { margin: 0 0 10px; max-width: 900px; }
 <ol class="findings">{{range .Findings}}<li>{{.}}</li>{{end}}</ol>
 
 <h2 id="rules">Which rules the vectors can tell apart</h2>
-<p class="small">Each rule is deleted in turn and the vectors are re-run: the bar is the number of vectors whose verdict changes. A rule no vector notices could be missing from an implementation that still passes every vector; the reason column says why, and where this repository tests it instead.</p>
+<p class="small">Each rule is weakened in turn (kept, with what it sets up for later rules, but with anything it reports as a failure turned into a pass) and the vectors are re-run: the bar is the number of vectors whose verdict changes. Deleting the rule instead, the method of <code>docs/conformance-method.md</code>, also removes what it sets up, so its count, given beside, can be larger than the rule's own verdict accounts for. A rule no vector notices weakened could be skipped by an implementation that still passes every vector; the reason says why, and where this repository tests it instead.</p>
 <div class="wrap"><table>
-<tr><th>Rule</th><th>Verifier</th><th>Suite code</th><th>Level</th><th>Vectors that notice its deletion</th><th>Source</th></tr>
+<tr><th>Rule</th><th>Verifier</th><th>Suite code</th><th>Level</th><th>Vectors that notice it weakened (deleted)</th><th>Source</th></tr>
 {{range .RuleRows}}<tr><td class="nowrap"><code>{{.ID}}</code></td><td>{{.Verifier}}</td><td class="nowrap">{{.Suite}}</td><td>{{.Level}}</td>
-<td>{{if .Changed}}<span class="bar" style="width:{{.Width}}px"></span>{{.Changed}}{{else}}<span class="bar zero" style="width:2px"></span>0<br><span class="small">{{.Reason}}</span>{{end}}</td><td class="small">{{.Section}}</td></tr>
+<td>{{if .Weakened}}<span class="bar" style="width:{{.Width}}px"></span>{{.Weakened}} <span class="small">({{.Deleted}})</span>{{else}}<span class="bar zero" style="width:2px"></span>0 <span class="small">({{.Deleted}})</span><br><span class="small">{{.Reason}}</span>{{end}}</td><td class="small">{{.Section}}</td></tr>
 {{end}}</table></div>
 
 <h2>Every vector</h2>
@@ -344,9 +344,12 @@ and policy-resolution vectors with and without a resolver.
 {{end}}
 ## What the vectors can tell apart
 
-Deleting one rule at a time and rerunning every vector, the method of trace-spec
-` + "`docs/conformance-method.md`" + `: {{.Distinguished}} of this verifier's {{.Rules}} rules change some vector's verdict. The
-others are listed, each with the reason no vector notices it, on the conformance page.
+Weakening one rule at a time (keeping what it sets up for later rules, turning anything
+it reports as a failure into a pass) and rerunning every vector: {{.Distinguished}} of this
+verifier's {{.Rules}} rules change some vector's verdict. Deleting each rule instead, the method
+of trace-spec ` + "`docs/conformance-method.md`" + `, gives larger counts for rules that set
+up state for others; the page shows both. The rules no vector notices are listed, each
+with the reason, on the conformance page.
 
 ## Scope
 

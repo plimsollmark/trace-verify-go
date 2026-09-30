@@ -94,6 +94,15 @@ type Hop struct {
 	Credential    string // the child's credential_id
 }
 
+// Weaken returns r with whatever it reports as a failure discarded and every other
+// effect on the state kept: the mutation check's second measure, which tells a rule
+// noticed for its verdict from one noticed only for what it sets up for later rules.
+func (r Rule) Weaken() Rule {
+	check := r.Check
+	r.Check = func(c *Context, h *Hop) string { check(c, h); return "" }
+	return r
+}
+
 // Verify walks the chain from ctx.Leaf through records.
 func Verify(records [][]byte, ctx Context) Result {
 	return VerifyWith(Rules, records, ctx)

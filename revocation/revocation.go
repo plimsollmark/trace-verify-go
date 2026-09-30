@@ -79,6 +79,15 @@ type Rule struct {
 	Check       func(*state) (outcome Outcome, cause string, codes []string)
 }
 
+// Weaken returns r with whatever it reports as a failure discarded and every other
+// effect on the state kept: the mutation check's second measure, which tells a rule
+// noticed for its verdict from one noticed only for what it sets up for later rules.
+func (r Rule) Weaken() Rule {
+	check := r.Check
+	r.Check = func(s *state) (Outcome, string, []string) { check(s); return "", "", nil }
+	return r
+}
+
 // Check runs the registry.
 func Check(bundle []byte, key Key, ctx Context) Result { return CheckWith(Rules, bundle, key, ctx) }
 

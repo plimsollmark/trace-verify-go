@@ -137,6 +137,32 @@ var Steps = []Step{
 		}},
 }
 
+// Weaken returns r with whatever it reports as a failure discarded and every other
+// effect on the state kept: the mutation check's second measure, which tells a rule
+// noticed for its verdict from one noticed only for what it sets up for later rules.
+// For a step, a finding recorded as false becomes true, and a decision other than an
+// approval becomes one; what the step resolves is kept.
+func (s Step) Weaken() Step {
+	run := s.Run
+	s.Run = func(in *Input, f *Findings) {
+		before := *f
+		run(in, f)
+		for _, p := range []struct{ was, now **bool }{
+			{&before.Resolves, &f.Resolves}, {&before.DigestMatches, &f.DigestMatches},
+			{&before.KeyConfigured, &f.KeyConfigured}, {&before.SignatureVerifies, &f.SignatureVerifies},
+			{&before.ChainReplays, &f.ChainReplays},
+		} {
+			if *p.now != *p.was && *p.now != nil && !**p.now {
+				*p.now = yes(true)
+			}
+		}
+		if f.Decision != before.Decision {
+			f.Decision = "decide.approve"
+		}
+	}
+	return s
+}
+
 // Check runs the registry's steps for the reference's relation and returns the findings
 // and the verdict.
 func Check(in Input) (Findings, string) { return CheckWith(Steps, in) }

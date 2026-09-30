@@ -89,6 +89,21 @@ func (s *state) str(path ...string) (string, bool) {
 	return str, ok && isStr
 }
 
+// Weaken returns r with whatever it reports as a failure discarded and every other
+// effect on the state kept: the mutation check's second measure, which tells a rule
+// noticed for its verdict from one noticed only for what it sets up for later rules.
+func (r Rule) Weaken() Rule {
+	check := r.Check
+	r.Check = func(s *state) Finding {
+		f := check(s)
+		if f.Status == Fail || f.Status == Unverified {
+			return Finding{Status: Pass}
+		}
+		return f
+	}
+	return r
+}
+
 // Rules is the registry, in evaluation order.
 var Rules = []Rule{
 	// --- the verifier's configuration (spec 3.3) ---

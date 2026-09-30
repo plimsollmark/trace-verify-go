@@ -35,9 +35,12 @@ wants. This is offered toward both, and the findings are offered whatever become
   Results are four-valued: pass, fail, skip, unverified; a skip or an unverified is
   never rounded to a pass.
 - **Load-bearing check on ourselves.** The method of `docs/conformance-method.md`,
-  applied to this verifier: delete each rule in turn, rerun every vector, and count the
-  vectors that notice. A rule none notices is listed with the reason on the conformance
-  page. Where the vectors cannot show whether a rule is performed at all, that is a
+  applied to this verifier: take each rule in turn, rerun every vector, and count the
+  vectors that notice. Each rule is both deleted, as the method says, and weakened (kept,
+  with what it sets up for later rules, but with its failures turned into passes);
+  weakening decides whether a rule is distinguished, because deleting a rule that parses
+  a key or resolves a document also breaks the rules after it. A rule no vector notices
+  is listed with the reason on the conformance page. Where the vectors cannot show whether a rule is performed at all, that is a
   finding (4, 8, 10, 11, 17, 22).
 - **Standard library only.** The JSON parser is this module's own, because a verifier's
   parser is where leniency turns a forged record into a pass: it refuses duplicate
@@ -122,19 +125,28 @@ They fall into four kinds:
    word for word, as the negative case for `TR-APR-002` ("no scheme"), and the schema
    requires `format: uri`. Either the file name or the record is wrong; this verifier
    rejects it. It is the shape of a record imported from NVIDIA OpenShell.
-8. **The portable vectors distinguish few of the suite's named checks.** Deleting a check
-   from this verifier changes some vector's verdict for only `TR-ENV-001`, `TR-SIG-004`,
-   `TR-SIG-005`, `TR-POL-003` and `TR-APR-002` (plus the spec-level rules). Of the other
-   twenty named checks, nineteen are implemented here and are either subsumed by schema
-   validation or have no JSON vector carrying their defect (the twentieth, `TR-ANC-002`,
-   is phase 6), so a second implementation cannot show from the vectors alone that it
-   performs them. The suite's own docs already list positive and negative cases
-   for each (this repository runs them in `record/rules_test.go`); published as vectors,
-   they would close the gap.
+8. **The portable vectors distinguish few of the suite's named checks.** Weakening one
+   check at a time in this verifier (keeping what it sets up for later checks, turning
+   anything it reports as a failure into a pass) changes some vector's verdict for only
+   `TR-ENV-001`, `TR-SIG-005`, `TR-POL-003` and `TR-APR-002` (plus the spec-level rules).
+   The other twenty-one are all implemented here. Ten are level 1 or level 2 checks, and
+   no vector carries an expected result above level 0, although the suite's own records
+   carry some of their defects (`invalid_missing_runtime` fails `TR-RTE-001` and
+   `TR-RTE-002` at level 1). The other eleven are level 0 checks that schema validation
+   subsumes or whose defect no JSON vector carries: no vector's key type is outside `OKP`
+   and `EC` (`TR-SIG-004`), and every vector carries a fixed `iat` and none a challenge
+   nonce (`TR-ENV-002`, `TR-RTE-004`). Deleting a check instead, the method of
+   `conformance-method.md`, also credits `TR-SIG-004`, whose deletion changes 87 verdicts
+   only because it parses the key the signature check uses; the method could say that a
+   rule which sets up state for others needs its verdict removed, not the rule. So a
+   second implementation cannot show from the vectors alone that it performs these
+   checks. The suite's docs already list positive and negative cases for each (this
+   repository runs them in `record/rules_test.go`); published as vectors, with
+   expectations at levels 1 and 2, they would close the gap.
 9. **The delegation corpus holds up from a second implementation.** Written from the
    draft profile without its reference walk, this verifier agrees with all 24 vectors in
-   the published record order and reversed, and deleting any one of the ten rules
-   changes exactly its own two vectors. The corpus's claim of two load-bearing vectors
+   the published record order and reversed, and deleting or weakening any one of the ten
+   rules changes exactly its own two vectors (four cases, each run in both orders). The corpus's claim of two load-bearing vectors
    per rule is confirmed independently, which is the measurement the profile's section 7
    asks for.
 10. **No revocation vector has a validly EC-signed bundle.** Vectors 21 and 22 expect
@@ -143,12 +155,12 @@ They fall into four kinds:
     bundle key in those vectors is Ed25519, so the algorithm cannot fit the key. The set
     cannot tell "not implemented" from "does not match the key", and a verifier that
     refused every EC bundle would pass it.
-11. **Two build-provenance rules have a margin of one vector.** The set promises "two
+11. **Three build-provenance rules have a margin of one vector.** The set promises "two
     vectors per boundary, on two different defects", and meets it per boundary. Per rule
-    it does not: deleting `dependency_attestation_missing` or
-    `dependency_publisher_untrusted` from this verifier changes one vector each (04 and
-    05). By the two-per-rule floor the suite applies elsewhere (#124), those rules are
-    under-covered. This verifier also checks that a dependency's attestation is for that
+    it does not: weakening `dependency_attestation_missing`,
+    `dependency_publisher_untrusted` or `resolved_dependencies_absent` in this verifier
+    changes one vector each (04, 05 and 06). By the two-per-rule floor the suite applies
+    elsewhere (#124), those rules are under-covered. This verifier also checks that a dependency's attestation is for that
     dependency's digest, which no vector exercises. And the vectors carry pre-verified
     statements, so the SLSA attestation signature that 3.3.1 requires at builder depth is
     out of their reach and out of this package's.

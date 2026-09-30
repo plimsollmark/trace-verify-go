@@ -108,6 +108,19 @@ type Rule struct {
 	Check       func(*state)
 }
 
+// Weaken returns r with whatever failures and warnings it reports discarded, and every
+// other effect on the state kept: the mutation check's second measure, which tells a
+// rule that is noticed for its verdict from one noticed only for what it sets up.
+func (r Rule) Weaken() Rule {
+	check := r.Check
+	r.Check = func(s *state) {
+		nf, nw := len(s.failures), len(s.warnings)
+		check(s)
+		s.failures, s.warnings = s.failures[:nf], s.warnings[:nw]
+	}
+	return r
+}
+
 // Verify runs the registry.
 func Verify(in Input, ctx Context) Result { return VerifyWith(Rules, in, ctx) }
 

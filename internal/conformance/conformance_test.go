@@ -28,20 +28,21 @@ func TestVectors(t *testing.T) {
 	}
 }
 
-// TestEveryRuleIsLoadBearing deletes each rule in turn and counts the vectors whose
-// verdict changes: the method in trace-spec docs/conformance-method.md, applied here.
+// TestEveryRuleIsLoadBearing weakens (and deletes) each rule in turn and counts the
+// vectors whose verdict changes: the method in trace-spec docs/conformance-method.md,
+// applied here, with weakening deciding whether a rule is distinguished.
 func TestEveryRuleIsLoadBearing(t *testing.T) {
 	for _, rc := range Mutation(root, Sets, Default()) {
 		reason, listed := Uncovered[rc.ID]
 		switch {
-		case len(rc.Changed) == 0 && !listed:
-			t.Errorf("rule %s: no vector notices its deletion; cover it or list it in Uncovered with a reason", rc.ID)
-		case len(rc.Changed) > 0 && listed:
-			t.Errorf("rule %s: %d vectors now notice its deletion; remove it from Uncovered", rc.ID, len(rc.Changed))
+		case !rc.Distinguished() && !listed:
+			t.Errorf("rule %s: no vector notices it weakened (deleted: %d); cover it or list it in Uncovered with a reason", rc.ID, len(rc.Changed))
+		case rc.Distinguished() && listed:
+			t.Errorf("rule %s: %d vectors now notice it weakened; remove it from Uncovered", rc.ID, len(rc.Weakened))
 		case listed:
-			t.Logf("rule %-30s not load-bearing: %s", rc.ID, reason)
+			t.Logf("rule %-30s not load-bearing (deleted: %d): %s", rc.ID, len(rc.Changed), reason)
 		default:
-			t.Logf("rule %-30s deleting it changes %d vectors", rc.ID, len(rc.Changed))
+			t.Logf("rule %-30s weakened changes %d vectors, deleted %d", rc.ID, len(rc.Weakened), len(rc.Changed))
 		}
 	}
 }
