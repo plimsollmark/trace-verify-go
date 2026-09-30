@@ -316,3 +316,35 @@ func TestAnchorRule(t *testing.T) {
 		t.Errorf("out-of-range leaf_index: %+v", f)
 	}
 }
+
+// A pinned public key copied into an unsigned record authenticates nothing: key_pinned
+// passes only after the signature has verified under that key.
+func TestKeyPinnedNeedsAVerifiedSignature(t *testing.T) {
+	var thumb string
+	b := build(t, func(r map[string]any) {
+		delete(r, "signature")
+		cnf, _ := json.Marshal(r["cnf"].(map[string]any)["jwk"])
+		v, err := jcs.Parse(cnf)
+		if err != nil {
+			t.Fatal(err)
+		}
+		k, err := jwk.Parse(v)
+		if err != nil {
+			t.Fatal(err)
+		}
+		thumb = k.Thumbprint()
+	})
+	lv := CheckLevel(b, 0, Options{Now: testNow, PinnedKeys: []string{thumb}})
+	if f, _ := lv.Finding("key_pinned"); f.Status != Unverified || f.Code != "key_pin_not_checked" {
+		t.Fatalf("unsigned record under a pinned key: key_pinned %+v", f)
+	}
+	signed := build(t, nil)
+	var pinned string
+	if r := Verify(signed, Options{Now: testNow, AcceptedProfiles: []string{ProfileV02}}); r.Outcome == Verified {
+		pinned = r.KeyThumbprint
+	}
+	r := Verify(signed, Options{Now: testNow, AcceptedProfiles: []string{ProfileV02}, PinnedKeys: []string{pinned}})
+	if f, _ := r.Finding("key_pinned"); r.Outcome != Verified || f.Status != Pass {
+		t.Fatalf("signed under a pinned key: %s %s, key_pinned %+v", r.Outcome, r.Code, f)
+	}
+}

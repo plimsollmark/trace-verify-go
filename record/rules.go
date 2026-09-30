@@ -51,6 +51,8 @@ type state struct {
 	raw  []byte
 	rec  *jcs.Object
 	key  *jwk.Key
+	// signed is set when the signature finding passes: the record verified under key.
+	signed bool
 }
 
 func pass() Finding                          { return Finding{Status: Pass} }
@@ -228,6 +230,7 @@ var Rules = []Rule{
 			if err := s.key.Verify(pre, sig); err != nil {
 				return fail("signature_invalid", "the signature does not verify over the RFC 8785 form under the cnf key")
 			}
+			s.signed = true
 			return pass()
 		}},
 	{ID: "key_pinned", Section: "verifier policy (Options.PinnedKeys); docs/trust-levels.md", Stage: StageBinding,
@@ -240,6 +243,13 @@ var Rules = []Rule{
 			}
 			if !slices.Contains(s.opts.PinnedKeys, s.key.Thumbprint()) {
 				return failf("key_not_pinned", "cnf key %s is not a pinned key", s.key.Thumbprint())
+			}
+			// A pinned cnf key authenticates the issuer only through a signature that
+			// verified under it; anyone can copy a pinned public key into an unsigned
+			// record (docs/trust-levels.md: the embedded key cannot establish its own
+			// authority). ModeLevel reaches here with the signature unverified or failed.
+			if !s.signed {
+				return unverified("key_pin_not_checked", "the cnf key is pinned, but no signature verified under it")
 			}
 			return pass()
 		}},
