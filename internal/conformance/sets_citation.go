@@ -50,7 +50,7 @@ func loadCitations(root, dir string) ([]Case, error) {
 				Codes     []string `json:"codes"`
 				Citations map[string]struct {
 					Outcome  string         `json:"outcome"`
-					Cause    *string        `json:"cause"`
+					Cause    optString      `json:"cause"`
 					Evidence map[string]any `json:"evidence"`
 				} `json:"citations"`
 			} `json:"expected"`
@@ -78,11 +78,22 @@ func loadCitations(root, dir string) ([]Case, error) {
 			Now: time.Unix(v.Context.Now, 0), MaxAge: time.Duration(v.Context.MaxAge) * time.Second,
 			ClockSkew: time.Duration(v.Context.MaxSkew) * time.Second, PinnedKeys: []string{thumb}}
 		exp := v.Expected
+		// expected.rejected is whether the record is rejected; a citation never rejects
+		// one (spec 3.1.2 rule 3), so every vector says false, and the harness compares
+		// it rather than assuming it.
+		outcome := string(record.Verified)
+		if exp.Rejected {
+			outcome = string(record.Rejected)
+		}
+		codes := exp.Codes
+		if codes == nil {
+			return nil, fmt.Errorf("%s: expected.codes is absent", p)
+		}
 		var got []citation.Citation
 		cases = append(cases, Case{
 			File:   rel(root, p),
 			Name:   v.ID + " " + v.Name,
-			Expect: Expect{Outcome: string(record.Verified), Source: "expected.rejected false: no citation outcome rejects a record; each citation row compared in Extra"},
+			Expect: Expect{Outcome: outcome, Codes: codes, Source: "expected.rejected and expected.codes; each citation row compared in Extra"},
 			Run: func(reg Registry) Observed {
 				r := record.Evaluate(reg.Record, rec, opts)
 				got = nil
@@ -109,8 +120,9 @@ func loadCitations(root, dir string) ([]Case, error) {
 					if string(c.Outcome) != want.Outcome {
 						bad = append(bad, fmt.Sprintf("%s: outcome %s, want %s", surface, c.Outcome, want.Outcome))
 					}
-					if want.Cause != nil && c.Cause != *want.Cause {
-						bad = append(bad, fmt.Sprintf("%s: cause %q, want %q", surface, c.Cause, *want.Cause))
+					// cause: null asserts that no cause is reported.
+					if want.Cause.Set && c.Cause != want.Cause.V {
+						bad = append(bad, fmt.Sprintf("%s: cause %q, want %q", surface, c.Cause, want.Cause.V))
 					}
 					for k, w := range want.Evidence {
 						if eq, prose := implementationProse[k]; prose {

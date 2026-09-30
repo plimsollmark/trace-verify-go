@@ -131,6 +131,9 @@ func loadSuiteRecords(root, dir string) ([]Case, error) {
 			Expect: Expect{Outcome: string(e.outcome), Code: e.code, Source: e.source},
 			Run:    func(reg Registry) Observed { return fromRecord(record.Evaluate(reg.Record, raw, opts)) },
 		}
+		if e.outcome == "" {
+			c.Expect.NoVerdict = e.source
+		}
 		if name == "valid_openshell_import" { // pin the reason, not only the outcome
 			c.Extra = func(o Observed) []string {
 				r := *o.Record

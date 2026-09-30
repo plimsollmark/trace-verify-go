@@ -56,7 +56,7 @@ func loadRevocationBundle(root, dir string) ([]Case, error) {
 			Expected struct {
 				Rejected bool           `json:"rejected"`
 				Outcome  string         `json:"outcome"`
-				Cause    *string        `json:"cause"`
+				Cause    optString      `json:"cause"`
 				Codes    []string       `json:"codes"`
 				Evidence map[string]any `json:"evidence"`
 			} `json:"expected"`
@@ -111,8 +111,9 @@ func loadRevocationBundle(root, dir string) ([]Case, error) {
 			},
 			Extra: func(Observed) []string {
 				var bad []string
-				if exp.Cause != nil && *exp.Cause != last.Cause {
-					bad = append(bad, fmt.Sprintf("cause %q, want %q", last.Cause, *exp.Cause))
+				// cause: null asserts that no cause is reported.
+				if exp.Cause.Set && exp.Cause.V != last.Cause {
+					bad = append(bad, fmt.Sprintf("cause %q, want %q", last.Cause, exp.Cause.V))
 				}
 				// expected.evidence is a subset: every field listed must be present with
 				// that value in what the verifier retains.

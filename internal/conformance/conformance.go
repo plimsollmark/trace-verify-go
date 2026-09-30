@@ -43,6 +43,10 @@ type Expect struct {
 	// status and nothing else (policy-resolution: "One value: the status of the
 	// TR-POL-003 finding").
 	Finding *FindingExpect
+	// NoVerdict, when set, says why the case deliberately expects nothing: it is run and
+	// shown, and neither passes nor fails. A case with no outcome, no finding and no
+	// reason is an expectation that failed to decode, and fails.
+	NoVerdict string
 }
 
 // FindingExpect is one rule's expected status.
@@ -53,7 +57,24 @@ type FindingExpect struct {
 
 // Informational reports whether nothing is expected: the case is run and shown, and
 // neither passes nor fails.
-func (e Expect) Informational() bool { return e.Outcome == "" && e.Finding == nil }
+func (e Expect) Informational() bool {
+	return e.Outcome == "" && e.Finding == nil && e.NoVerdict != ""
+}
+
+// optString is a JSON member that may be absent, null or a string, so an expectation of
+// null ("no cause") is kept apart from no expectation at all.
+type optString struct {
+	Set bool // the member was present, null included
+	V   string
+}
+
+func (o *optString) UnmarshalJSON(b []byte) error {
+	o.Set = true
+	if string(b) == "null" {
+		return nil
+	}
+	return json.Unmarshal(b, &o.V)
+}
 
 // Case is one vector, ready to run.
 type Case struct {
@@ -120,6 +141,9 @@ func judge(c Case, reg Registry) Verdict {
 	v.Got = c.Run(reg)
 	switch {
 	case c.Expect.Informational():
+		return v
+	case c.Expect.Outcome == "" && c.Expect.Finding == nil:
+		v.Problems = append(v.Problems, "no expectation decoded from the vector, and no reason given for expecting none")
 		return v
 	case c.Expect.Finding != nil:
 		var f record.Finding
