@@ -1,6 +1,6 @@
 # Plan: a Go verifier for TRACE v0.2, written from the specification
 
-Status: **Phase 0 in progress** (2026-09-30). Update the status line and the phase
+Status: **Phase 1 done, phase 2 next** (2026-09-30). Update the status line and the phase
 table as work lands.
 
 ## Goal
@@ -87,8 +87,8 @@ is reported, which is also a finding for the suite.
 
 | # | Scope | Vectors that decide it | Status |
 |---|---|---|---|
-| 0 | Repository, plan, clean-room log, vendored vectors with provenance, gate | none | in progress |
-| 1 | `jcs`, `jwk`, embedded-signature binding, freshness, profile compatibility | spec `canonicalization-boundary` (6), `verifier-compatibility` (8); suite `canonicalization` (4) and the four `invalid_canonical_*` | pending |
+| 0 | Repository, plan, clean-room log, vendored vectors with provenance, gate | none | done |
+| 1 | `jcs`, `jwk`, embedded-signature binding, freshness, profile compatibility | spec `canonicalization-boundary` (6), `verifier-compatibility` (8); suite `canonicalization` (4) and the four `invalid_canonical_*` | done: 22 of 22 pass; mutation check passes (6 rules not yet load-bearing, each with its reason in `internal/conformance`) |
 | 2 | Level 0 to 2 named checks, caller-supplied policy resolver (TR-POL-003) | suite `tests/vectors` (13), `policy-resolution` (11) | pending |
 | 3 | Delegation digests, revocation, reproducibility-claim shape rules | `delegation-link` (24), `revocation-bundle` (28), `reproducibility-claim` (21) | pending |
 | 4 | References: citation resolution, condition appraisal, approval outcome, build-provenance depth | `citation-resolution` (16), `condition-appraisal` (9 files), `chap-approval-outcome` (7 files), `build-provenance-depth` (6) | pending |
@@ -112,6 +112,18 @@ closed. Each later phase stands alone.
    which holds members a `cnf.jwk` may carry beyond the named ones to the safe-integer
    domain that 3.2.2 requires of "every member". A record with such a member passes the
    suite's schema and fails the spec's.
+3. **The verifier-compatibility README is behind the spec.** It opens "No normative text
+   for them has been accepted", but spec 3.3 at the pinned commit carries that text
+   (marked `CHANGED: #116`). The vectors and the spec agree; only the README is stale.
+4. **Two of the verifier-compatibility refusals are not load-bearing for the rule they
+   name.** Vector 06 (empty accepted set) and vectors 07 and 11 (absent or empty profile)
+   are refused by the plain membership check whether or not a verifier implements the
+   specific rule, because an empty set and an absent profile both fail membership. Since
+   the set makes `failure` informative, deleting either specific rule here changes no
+   verdict. The vectors still test the outcome that matters ("empty means nothing, never
+   anything"); what they cannot show is that the specific rule exists. This is the
+   non-load-bearing case the suite's `conformance-method.md` describes, observed from a
+   second implementation.
 
 ## Decisions that are not this plan's to make
 

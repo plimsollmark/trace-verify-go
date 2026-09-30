@@ -32,6 +32,9 @@ type Member struct {
 
 // Get returns the value of the named member.
 func (o *Object) Get(name string) (any, bool) {
+	if o == nil {
+		return nil, false
+	}
 	for _, m := range o.Members {
 		if m.Name == name {
 			return m.Value, true
@@ -42,7 +45,10 @@ func (o *Object) Get(name string) (any, bool) {
 
 // Without returns a shallow copy of o with the named member removed.
 func (o *Object) Without(name string) *Object {
-	c := &Object{Members: make([]Member, 0, len(o.Members))}
+	c := &Object{}
+	if o == nil {
+		return c
+	}
 	for _, m := range o.Members {
 		if m.Name != name {
 			c.Members = append(c.Members, m)
