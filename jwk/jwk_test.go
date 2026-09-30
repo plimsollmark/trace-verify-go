@@ -2,6 +2,7 @@ package jwk
 
 import (
 	"crypto/ecdsa"
+	"crypto/ed25519"
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/sha256"
@@ -152,6 +153,35 @@ func TestB64RefusesBytesOutsideTheAlphabet(t *testing.T) {
 	for _, s := range []string{"AQ\nID", "AQID\r\n", "\nAQID", "AQ ID", "AQ+D", "AQ/D", "AQI="} {
 		if _, err := B64.DecodeString(s); err == nil {
 			t.Errorf("%q decoded", s)
+		}
+	}
+}
+
+// RFC 8032 section 5.1.3 decoding, and small order: each of these is 32 bytes, which is
+// all crypto/ed25519 checks. The identity verifies the signature 01 00..00 || 00..00 on
+// every message.
+func TestEd25519PointsThatBindNothing(t *testing.T) {
+	for _, c := range []struct{ name, x string }{
+		{"identity", "AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"},
+		{"identity with the sign bit set", "AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIA"},
+		{"y = p + 1, not canonical", "7v_______________________________________38"},
+		{"order 2, (0, -1)", "7P_______________________________________38"},
+		{"order 4, y = 0", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"},
+		{"order 8", "xxdqcD1N2E-6PAt2DRBnDyogU_osOczGTsf9d5KsA3o"},
+		{"order 8, the other", "JuiVj8KyJ7BFw_SJ8u-Y8NXfrAXTxjM5sTgCiG1T_AU"},
+		{"not on the curve, y = 2", "AgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"},
+	} {
+		if _, err := parse(t, `{"kty":"OKP","crv":"Ed25519","x":"`+c.x+`"}`); !errors.Is(err, ErrMalformed) {
+			t.Errorf("%s: got %v, want ErrMalformed", c.name, err)
+		}
+	}
+	for range 200 {
+		pub, _, err := ed25519.GenerateKey(nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := parse(t, `{"kty":"OKP","crv":"Ed25519","x":"`+B64.EncodeToString(pub)+`"}`); err != nil {
+			t.Fatalf("generated key %x refused: %v", pub, err)
 		}
 	}
 }

@@ -91,6 +91,9 @@ func Parse(v any) (*Key, error) {
 		if err != nil {
 			return nil, err
 		}
+		if err := checkEd25519(x); err != nil {
+			return nil, fmt.Errorf("%w: %v", ErrMalformed, err)
+		}
 		k.x, k.ed = x, ed25519.PublicKey(x)
 	case kty == "EC" && (crv == "P-256" || crv == "P-384"):
 		curve, size := elliptic.P256(), 32
