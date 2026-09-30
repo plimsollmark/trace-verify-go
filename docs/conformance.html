@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TRACE v0.2 conformance: trace-verify-go</title>
+<style>
+:root { color-scheme: light; --ink:#1d2330; --muted:#5b6475; --line:#dde2ea; --bg:#ffffff; --panel:#f6f8fb;
+  --good:#1f7a3d; --good-bg:#e7f5ec; --bad:#b3261e; --bad-bg:#fbe9e7; --none:#5b6475; --none-bg:#eef1f5; --bar:#3b6fb6; }
+* { box-sizing: border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 1120px; margin: 0 auto; padding: 28px 20px 60px; }
+h1 { font-size: 26px; margin: 0 0 4px; }
+h2 { font-size: 19px; margin: 36px 0 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+h3 { font-size: 16px; margin: 24px 0 4px; }
+p.lede { color: var(--muted); margin: 0 0 16px; max-width: 820px; }
+.pins { font-size: 13px; color: var(--muted); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; }
+.pins code { color: var(--ink); }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin: 18px 0; }
+.tile { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; background: var(--panel); }
+.tile .n { font-size: 28px; font-weight: 650; }
+.tile .l { color: var(--muted); font-size: 13px; }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+th, td { text-align: left; vertical-align: top; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+th { color: var(--muted); font-weight: 600; font-size: 12.5px; }
+td.file { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; word-break: break-all; }
+code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.92em; background: var(--panel); padding: 0 3px; border-radius: 3px; }
+.pins code, ol.findings code { overflow-wrap: anywhere; }
+td.nowrap, td.nowrap code { white-space: nowrap; }
+.st { display: inline-block; white-space: nowrap; border-radius: 999px; padding: 1px 9px; font-size: 12px; font-weight: 600; }
+.st.agree { color: var(--good); background: var(--good-bg); }
+.st.disagree { color: var(--bad); background: var(--bad-bg); }
+.st.none { color: var(--none); background: var(--none-bg); }
+.small { color: var(--muted); font-size: 12px; }
+.bar { display: inline-block; height: 10px; background: var(--bar); border-radius: 0 3px 3px 0; vertical-align: middle; margin-right: 6px; }
+.bar.zero { background: var(--line); }
+ol.findings li { margin: 0 0 10px; max-width: 900px; }
+.wrap { overflow-x: auto; }
+</style>
+</head>
+<body>
+<main>
+<h1>TRACE v0.2 conformance: trace-verify-go</h1>
+<p class="lede">A Go verifier for TRACE Trust Records, written from the specification alone, run against the TRACE project's own published vectors. Each vector's expectation comes from the vector file; where a file states none, the row says where the expectation came from, or that there is none.</p>
+<div class="pins">Specification and schema: <code>agentrust-io/trace-spec</code> at <code>63f4d1500c24f837bd96a503a09860a49778e5bb</code>, schema SHA-256 <code>44778f700dae0216f18eda482457b1a9363aef8e8f92adb33d152c925781eea6</code>. Suite vectors: <code>agentrust-io/trace-tests</code> <code>v0.6.1</code>.</div>
+
+<div class="tiles">
+  <div class="tile"><div class="n">52 of 52</div><div class="l">vectors with an expectation agree</div></div>
+  <div class="tile"><div class="n">0</div><div class="l">vectors disagree</div></div>
+  <div class="tile"><div class="n">1</div><div class="l">run and shown without a verdict (the vector states none)</div></div>
+  <div class="tile"><div class="n">9 of 33</div><div class="l">rules whose deletion some vector notices</div></div>
+</div>
+
+<h2>Vector sets</h2>
+<div class="wrap"><table>
+<tr><th>Set</th><th>What it tests</th><th>Agree</th></tr>
+<tr><td><a href="#set-canonicalization-boundary">canonicalization-boundary</a></td><td>RFC 8785 key order and escaping against ad-hoc serializers, with signatures over the wrong pre-image (spec 3.2.2)</td><td>6 of 6</td></tr>
+<tr><td><a href="#set-verifier-compatibility">verifier-compatibility</a></td><td>declared profile sets, refusal outside them, the verification statement (spec 3.3)</td><td>8 of 8</td></tr>
+<tr><td><a href="#set-suite-canonicalization">suite canonicalization</a></td><td>the suite&#39;s copies of the four positive boundary records; TR-SIG-005 must pass</td><td>4 of 4</td></tr>
+<tr><td><a href="#set-suite-invalid_canonical">suite invalid_canonical</a></td><td>inputs outside the canonicalization domain: a lone surrogate, a non-finite number, integers beyond 2^53-1 (spec 3.2.2)</td><td>4 of 4</td></tr>
+<tr><td><a href="#set-suite-policy-resolution">suite policy-resolution</a></td><td>TR-POL-003: does the bundle at policy_uri hash to bundle_hash; each vector asserts that one finding, with a caller-supplied resolver and again without one</td><td>22 of 22</td></tr>
+<tr><td><a href="#set-suite-records">suite records</a></td><td>the suite&#39;s top-level records; they carry no expected block, so each expectation below is derived from the file name and the suite&#39;s documented rules, and says so</td><td>8 of 8</td></tr>
+</table></div>
+
+<h2 id="findings">Findings for the TRACE project</h2>
+<p class="small">From <code>PLAN.md</code>, where they are kept. Each is something a second implementation surfaced about the specification, the schema or the suite.</p>
+<ol class="findings"><li><strong>Embedded EC signatures have no stated encoding.</strong> 3.2.1 allows ES256 and ES384 for JWT contexts, and 3.2.2 defines the embedded <code>signature</code> as &#34;base64url, no padding&#34; over the canonical form, without saying whether an EC signature is raw <code>r || s</code> (as JWS uses) or DER. The suite verifies Ed25519 only (its TR-SIG-004 note), so no vector decides it. This verifier will accept Ed25519 and raw <code>r || s</code> for EC, state that choice, and ask.</li><li><strong>The suite&#39;s schema copy lags the spec&#39;s.</strong> <code>trace-tests/schemas/trace-claim.json</code> (SHA-256 <code>eed7f89e...</code>) lacks the spec schema&#39;s <code>canonicalizableValue</code> definition, which holds members a <code>cnf.jwk</code> may carry beyond the named ones to the safe-integer domain that 3.2.2 requires of &#34;every member&#34;. A record with such a member passes the suite&#39;s schema and fails the spec&#39;s.</li><li><strong>The verifier-compatibility README is behind the spec.</strong> It opens &#34;No normative text for them has been accepted&#34;, but spec 3.3 at the pinned commit carries that text (marked <code>CHANGED: #116</code>). The vectors and the spec agree; only the README is stale.</li><li><strong>Two of the verifier-compatibility refusals are not load-bearing for the rule they name.</strong> Vector 06 (empty accepted set) and vectors 07 and 11 (absent or empty profile) are refused by the plain membership check whether or not a verifier implements the specific rule, because an empty set and an absent profile both fail membership. Since the set makes <code>failure</code> informative, deleting either specific rule here changes no verdict. The vectors still test the outcome that matters (&#34;empty means nothing, never anything&#34;); what they cannot show is that the specific rule exists. This is the non-load-bearing case the suite&#39;s <code>conformance-method.md</code> describes, observed from a second implementation.</li><li><strong>The suite&#39;s docs are narrower than the schema on two digests.</strong> <code>TR-SCA-002</code> and <code>TR-TXN-001</code> are documented as <code>sha256:</code> only; the schema admits <code>sha384:</code> for <code>build_provenance.digest</code> and <code>tool_transcript.hash</code>. This verifier follows the schema, since the spec makes a disagreeing supporting artifact the defect.</li><li><strong>cMCP envelopes cannot be verified from the TRACE spec alone.</strong> 3.2.2 says only &#34;cMCP&#39;s RuntimeClaim (signature over the canonical record, key in trace.cnf.jwk)&#34;, without saying which object is the canonical record, and the suite&#39;s <code>valid_cmcp_runtime.json</code> carries a 20-character signature, which cannot be an Ed25519 signature under any reading. This verifier does not implement the cMCP envelope; the vector is run and reported without a verdict.</li><li><strong><code>valid_openshell_import.json</code> is invalid by the suite&#39;s own documented rule.</strong> Its <code>appraisal.verifier</code> is <code>nvidia-openshell/0.3.0</code>, which <code>docs/modules/tr-apr.md</code> gives, word for word, as the negative case for <code>TR-APR-002</code> (&#34;no scheme&#34;), and the schema requires <code>format: uri</code>. Either the file name or the record is wrong; this verifier rejects it. It is the shape of a record imported from NVIDIA OpenShell.</li><li><strong>The portable vectors distinguish few of the suite&#39;s named checks.</strong> Deleting a check from this verifier changes some vector&#39;s verdict for only <code>TR-ENV-001</code>, <code>TR-SIG-004</code>, <code>TR-SIG-005</code>, <code>TR-POL-003</code> and <code>TR-APR-002</code> (plus the spec-level rules). Of the other twenty named checks, nineteen are implemented here and are either subsumed by schema validation or have no JSON vector carrying their defect (the twentieth, <code>TR-ANC-002</code>, is phase 6), so a second implementation cannot show from the vectors alone that it performs them. The suite&#39;s own docs already list positive and negative cases for each (this repository runs them in <code>record/rules_test.go</code>); published as vectors, they would close the gap.</li></ol>
+
+<h2 id="rules">Which rules the vectors can tell apart</h2>
+<p class="small">Each rule is deleted in turn and the vectors are re-run: the bar is the number of vectors whose verdict changes. A rule no vector notices could be missing from an implementation that still passes every vector; the reason column says why, and where this repository tests it instead.</p>
+<div class="wrap"><table>
+<tr><th>Rule</th><th>Suite code</th><th>Level</th><th>Vectors that notice its deletion</th><th>Source</th></tr>
+<tr><td class="nowrap"><code>accepted_profiles_nonempty</code></td><td class="nowrap"></td><td>0</td>
+<td><span class="bar zero" style="width:2px"></span>0<br><span class="small">redundant for the outcome: an empty set contains no profile, so profile_accepted refuses anyway; this rule names the cause, and verifier-compatibility makes the cause informative</span></td><td class="small">3.3 Verifier profile compatibility</td></tr>
+<tr><td class="nowrap"><code>accepted_profiles_implemented</code></td><td class="nowrap"></td><td>0</td>
+<td><span class="bar" style="width:12px"></span>2</td><td class="small">3.3 Verifier profile compatibility</td></tr>
+<tr><td class="nowrap"><code>json</code></td><td class="nowrap"></td><td>0</td>
+<td><span class="bar" style="width:202px"></span>39</td><td class="small">3.2.2 (RFC 8785, RFC 7493)</td></tr>
+<tr><td class="nowrap"><code>integer_range</code></td><td class="nowrap"></td><td>0</td>
+<td><span class="bar" style="width:12px"></span>2</td><td class="small">3.2.2 Canonical form, numbers</td></tr>
+<tr><td class="nowrap"><code>profile_present</code></td><td class="nowrap">TR-ENV-001</td><td>0</td>
+<td><span class="bar zero" style="width:2px"></span>0<br><span class="small">redundant for the outcome: an absent or empty profile is in no accepted set, so profile_accepted refuses anyway; same reason</span></td><td class="small">3.3 Verifier profile compatibility</td></tr>
+<tr><td class="nowrap"><code>profile_accepted</code></td><td class="nowrap">TR-ENV-001</td><td>0</td>
+<td><span class="bar" style="width:17px"></span>3</td><td class="small">3.3 Verifier profile compatibility; Changes from v0.1</td></tr>
+<tr><td class="nowrap"><code>cnf_structure</code></td><td class="nowrap">TR-ENV-004</td><td>0</td>
+<td><span class="bar zero" style="width:2px"></span>0<br><span class="small">no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs&#39; cases</span></td><td class="small">3.1 cnf</td></tr>
+<tr><td class="nowrap"><code>cnf_public_only</code></td><td class="nowrap">TR-ENV-005</td><td>0</td>
+<td><span class="bar zero" style="width:2px"></span>0<br><span class="small">no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs&#39; cases</span></td><td class="small">3.1 cnf (RFC 8747); RFC 7517</td></tr>
+<tr><td class="nowrap"><code>cnf_key_type</code></td><td class="nowrap">TR-SIG-004</td><td>0</td>
+<td><span class="bar" style="width:68px"></span>13</td><td class="small">3.2.1 Signing and key management</td></tr>
+<tr><td class="nowrap"><code>signature</code></td><td class="nowrap">TR-SIG-005</td><td>0</td>
+<td><span class="bar" style="width:32px"></span>6</td><td class="small">3.2.2 Signature binding (embedded); 3.3 step 1</td></tr>
+<tr><td class="nowrap"><code>key_pinned</code></td><td class="nowrap"></td><td>0</td>
+<td><span class="bar zero" style="width:2px"></span>0<br><span class="small">no registered vector signs with a key other than its trusted_key; record/rules_test.go covers it</span></td><td class="small">verifier policy (Options.PinnedKeys); docs/trust-levels.md</td></tr>
+<tr><td class="nowrap"><code>schema</code></td><td class="nowrap"></td><td>0</td>
+<td><span class="bar" style="width:12px"></span>2</td><td class="small">Authority and conformance claims: schema/trace-claim.json</td></tr>
+<tr><td class="nowrap"><code>freshness</code></td><td class="nowrap">TR-ENV-002</td><td>0</td>
+<td><span class="bar zero" style="width:2px"></span>0<br><span class="small">every vector carries a fixed iat, so every set runs with freshness off; record/rules_test.go covers it</span></td><td class="small">3.2.2 Freshness; 3.3 step 2</td></tr>
+<tr><td class="nowrap"><code>nonce</code></td><td class="nowrap">TR-RTE-004</td><td>0</td>
+<td><span class="bar zero" style="width:2px"></span>0<br><span class="small">no registered vector issues a challenge nonce; record/rules_test.go covers it</span></td><td class="small">3.2.2 Freshness (challenge nonce)</td></tr>
+<tr><td class="nowrap"><code>origin_platform</code></td><td class="nowrap"></td><td>0</td>
+<td><span class="bar zero" style="width:2px"></span>0<br><span class="small">the schema&#39;s if/then encodes spec 3.1.1 as well, and the one vector with origin (valid_openshell_import) is rejected on other grounds; record/rules_test.go covers it</span></td><td class="small">3.1.1 origin</td></tr>
+<tr><td class="nowrap"><code>TR-ENV-003</code></td><td class="nowrap">TR-ENV-003</td><td>0</td>
+<td><span class="bar zero" style="width:2px"></span>0<br><span class="small">no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs&#39; cases</span></td><td class="small">3.1 subject (SPIFFE SVID or DID URI)</td></tr>
+<tr><td class="nowrap"><code>TR-POL-001</code></td><td class="nowrap">TR-POL-001</td><td>0</td>
+<td><span class="bar zero" style="width:2px"></span>0<br><span class="small">no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs&#39; cases</span></td><td class="small">3.1 policy</td></tr>
+<tr><td class="nowrap"><code>TR-POL-002</code></td><td class="nowrap">TR-POL-002</td><td>0</td>
+<td><span class="bar zero" style="width:2px"></span>0<br><span class="small">no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs&#39; cases</span></td><td class="small">3.1 policy</td></tr>
+<tr><td class="nowrap"><code>TR-POL-003</code></td><td class="nowrap">TR-POL-003</td><td>0</td>
+<td><span class="bar" style="width:114px"></span>22</td><td class="small">schema: policy.policy_uri (format uri); trace-tests tr-pol.md</td></tr>
+<tr><td class="nowrap"><code>TR-APR-001</code></td><td class="nowrap">TR-APR-001</td><td>0</td>
+<td><span class="bar zero" style="width:2px"></span>0<br><span class="small">no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs&#39; cases</span></td><td class="small">3.1 appraisal (EAR)</td></tr>
+<tr><td class="nowrap"><code>TR-APR-002</code></td><td class="nowrap">TR-APR-002</td><td>0</td>
+<td><span class="bar" style="width:7px"></span>1</td><td class="small">3.1 appraisal; schema: appraisal.verifier (format uri)</td></tr>
+<tr><td class="nowrap"><code>TR-APR-003</code></td><td class="nowrap">TR-APR-003</td><td>0</td>
+<td><span class="bar zero" style="width:2px"></span>0<br><span class="small">no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs&#39; cases</span></td><td class="small">schema: appraisal.policy_ref (format uri)</td></tr>
+<tr><td class="nowrap"><code>TR-APR-004</code></td><td class="nowrap">TR-APR-004</td><td>0</td>
+<td><span class="bar zero" style="width:2px"></span>0<br><span class="small">no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs&#39; cases</span></td><td class="small">schema: appraisal.timestamp</td></tr>
+<tr><td class="nowrap"><code>TR-APR-005</code></td><td class="nowrap">TR-APR-005</td><td>1</td>
+<td><span class="bar zero" style="width:2px"></span>0<br><span class="small">no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs&#39; cases</span></td><td class="small">trace-tests levels.md, level 1</td></tr>
+<tr><td class="nowrap"><code>TR-RTE-001</code></td><td class="nowrap">TR-RTE-001</td><td>1</td>
+<td><span class="bar zero" style="width:2px"></span>0<br><span class="small">no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs&#39; cases</span></td><td class="small">3.1 runtime; schema: runtime.platform</td></tr>
+<tr><td class="nowrap"><code>TR-RTE-002</code></td><td class="nowrap">TR-RTE-002</td><td>1</td>
+<td><span class="bar zero" style="width:2px"></span>0<br><span class="small">no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs&#39; cases</span></td><td class="small">3.1 runtime; schema: runtime.measurement</td></tr>
+<tr><td class="nowrap"><code>TR-RTE-003</code></td><td class="nowrap">TR-RTE-003</td><td>1</td>
+<td><span class="bar zero" style="width:2px"></span>0<br><span class="small">no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs&#39; cases</span></td><td class="small">schema: runtime.rim_uri</td></tr>
+<tr><td class="nowrap"><code>TR-SCA-001</code></td><td class="nowrap">TR-SCA-001</td><td>1</td>
+<td><span class="bar zero" style="width:2px"></span>0<br><span class="small">no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs&#39; cases</span></td><td class="small">3.1 build_provenance (SLSA)</td></tr>
+<tr><td class="nowrap"><code>TR-SCA-002</code></td><td class="nowrap">TR-SCA-002</td><td>1</td>
+<td><span class="bar zero" style="width:2px"></span>0<br><span class="small">no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs&#39; cases</span></td><td class="small">3.1 build_provenance; schema: build_provenance.digest</td></tr>
+<tr><td class="nowrap"><code>TR-TXN-001</code></td><td class="nowrap">TR-TXN-001</td><td>2</td>
+<td><span class="bar zero" style="width:2px"></span>0<br><span class="small">no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs&#39; cases</span></td><td class="small">3.1 tool_transcript; schema: tool_transcript.hash</td></tr>
+<tr><td class="nowrap"><code>TR-TXN-002</code></td><td class="nowrap">TR-TXN-002</td><td>2</td>
+<td><span class="bar zero" style="width:2px"></span>0<br><span class="small">no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs&#39; cases</span></td><td class="small">3.1 tool_transcript; schema: tool_transcript.call_count</td></tr>
+<tr><td class="nowrap"><code>TR-ANC-001</code></td><td class="nowrap">TR-ANC-001</td><td>2</td>
+<td><span class="bar zero" style="width:2px"></span>0<br><span class="small">no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs&#39; cases</span></td><td class="small">3.1 transparency (SCITT receipt URI)</td></tr>
+<tr><td class="nowrap"><code>TR-ANC-002</code></td><td class="nowrap">TR-ANC-002</td><td>2</td>
+<td><span class="bar zero" style="width:2px"></span>0<br><span class="small">not implemented until PLAN.md phase 6; it reports unverified, never pass</span></td><td class="small">3.3 step 6; spec/registry-anchor-v1.md</td></tr>
+</table></div>
+
+<h2>Every vector</h2>
+<h3 id="set-canonicalization-boundary">canonicalization-boundary <span class="small">trace-spec/examples/canonicalization-boundary</span></h3>
+<div class="wrap"><table>
+<tr><th>Vector</th><th>Expected</th><th>This verifier</th><th>Result</th></tr>
+<tr><td class="file">01-non-ascii-values.json</td><td>verified</td><td>verified</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">02-non-bmp-values.json</td><td>verified</td><td>verified</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">03-utf16-key-order.json</td><td>verified</td><td>verified</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">04-utf16-key-order-nested.json</td><td>verified</td><td>verified</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">05-ascii-escaped-signature.json</td><td>rejected (signature_invalid)</td><td>rejected (signature_invalid)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">06-codepoint-order-signature.json</td><td>rejected (signature_invalid)</td><td>rejected (signature_invalid)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+</table></div>
+<h3 id="set-verifier-compatibility">verifier-compatibility <span class="small">trace-spec/examples/verifier-compatibility</span></h3>
+<div class="wrap"><table>
+<tr><th>Vector</th><th>Expected</th><th>This verifier</th><th>Result</th></tr>
+<tr><td class="file">01-known-version-verified.json</td><td>verified</td><td>verified</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">02-unknown-version-refused.json</td><td>refused (profile_not_accepted, informative)</td><td>refused (profile_not_accepted)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">04-unschemaed-profile-refused.json</td><td>refused (unschemaed_profile_in_accepted_set, informative)</td><td>refused (unschemaed_profile_in_accepted_set)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">05-downgrade-silent-is-impossible.json</td><td>refused (profile_not_accepted, informative)</td><td>refused (profile_not_accepted)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">06-empty-accepted-set-refused.json</td><td>refused (no_accepted_profiles, informative)</td><td>refused (no_accepted_profiles)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">07-profile-absent-refused.json</td><td>refused (profile_absent, informative)</td><td>refused (profile_absent)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">09-unschemaed-profile-first-in-set-refused.json</td><td>refused (unschemaed_profile_in_accepted_set, informative)</td><td>refused (unschemaed_profile_in_accepted_set)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">11-empty-profile-string-refused.json</td><td>refused (profile_absent, informative)</td><td>refused (profile_absent)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+</table></div>
+<h3 id="set-suite-canonicalization">suite canonicalization <span class="small">trace-tests/tests/vectors/canonicalization</span></h3>
+<div class="wrap"><table>
+<tr><th>Vector</th><th>Expected</th><th>This verifier</th><th>Result</th></tr>
+<tr><td class="file">01-non-ascii-values.json</td><td>verified</td><td>verified</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">02-non-bmp-values.json</td><td>verified</td><td>verified</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">03-utf16-key-order.json</td><td>verified</td><td>verified</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">04-utf16-key-order-nested.json</td><td>verified</td><td>verified</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+</table></div>
+<h3 id="set-suite-invalid_canonical">suite invalid_canonical <span class="small">trace-tests/tests/vectors</span></h3>
+<div class="wrap"><table>
+<tr><th>Vector</th><th>Expected</th><th>This verifier</th><th>Result</th></tr>
+<tr><td class="file">invalid_canonical_integer_out_of_range.json</td><td>rejected (integer_out_of_range)<br><span class="small">file name (the vector has no expected block)</span></td><td>rejected (integer_out_of_range)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">invalid_canonical_lone_surrogate.json</td><td>rejected (input_not_canonicalizable)<br><span class="small">file name (the vector has no expected block)</span></td><td>rejected (input_not_canonicalizable)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">invalid_canonical_non_finite_float.json</td><td>rejected (input_not_canonicalizable)<br><span class="small">file name (the vector has no expected block)</span></td><td>rejected (input_not_canonicalizable)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">invalid_canonical_plain_trace.json</td><td>rejected (integer_out_of_range)<br><span class="small">file name (the vector has no expected block)</span></td><td>rejected (integer_out_of_range)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+</table></div>
+<h3 id="set-suite-policy-resolution">suite policy-resolution <span class="small">trace-tests/tests/vectors/policy-resolution</span></h3>
+<div class="wrap"><table>
+<tr><th>Vector</th><th>Expected</th><th>This verifier</th><th>Result</th></tr>
+<tr><td class="file">01-no-policy-uri.json</td><td>TR-POL-003 skip</td><td>TR-POL-003 skip</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">01-no-policy-uri.json#no-resolver</td><td>TR-POL-003 skip</td><td>TR-POL-003 skip</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">02-resolved-and-matches.json</td><td>TR-POL-003 pass</td><td>TR-POL-003 pass</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">02-resolved-and-matches.json#no-resolver</td><td>TR-POL-003 skip</td><td>TR-POL-003 skip</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">03-digest-mismatch-minimal-mutation.json</td><td>TR-POL-003 fail</td><td>TR-POL-003 fail</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">03-digest-mismatch-minimal-mutation.json#no-resolver</td><td>TR-POL-003 skip</td><td>TR-POL-003 skip</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">04-digest-mismatch-different-object.json</td><td>TR-POL-003 fail</td><td>TR-POL-003 fail</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">04-digest-mismatch-different-object.json#no-resolver</td><td>TR-POL-003 skip</td><td>TR-POL-003 skip</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">05-referent-unreachable-no-route.json</td><td>TR-POL-003 unverified</td><td>TR-POL-003 unverified</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">05-referent-unreachable-no-route.json#no-resolver</td><td>TR-POL-003 skip</td><td>TR-POL-003 skip</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">06-resolved-and-matches-sha384.json</td><td>TR-POL-003 pass</td><td>TR-POL-003 pass</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">06-resolved-and-matches-sha384.json#no-resolver</td><td>TR-POL-003 skip</td><td>TR-POL-003 skip</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">07-digest-bound-to-other-referent.json</td><td>TR-POL-003 fail</td><td>TR-POL-003 fail</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">07-digest-bound-to-other-referent.json#no-resolver</td><td>TR-POL-003 skip</td><td>TR-POL-003 skip</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">08-policy-uri-is-a-relative-reference.json</td><td>TR-POL-003 fail</td><td>TR-POL-003 fail</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">08-policy-uri-is-a-relative-reference.json#no-resolver</td><td>TR-POL-003 fail</td><td>TR-POL-003 fail</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">09-sha384-bound-to-other-referent.json</td><td>TR-POL-003 fail</td><td>TR-POL-003 fail</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">09-sha384-bound-to-other-referent.json#no-resolver</td><td>TR-POL-003 skip</td><td>TR-POL-003 skip</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">10-policy-uri-carries-a-space.json</td><td>TR-POL-003 fail</td><td>TR-POL-003 fail</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">10-policy-uri-carries-a-space.json#no-resolver</td><td>TR-POL-003 fail</td><td>TR-POL-003 fail</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">11-referent-unreachable-route-fails.json</td><td>TR-POL-003 unverified</td><td>TR-POL-003 unverified</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">11-referent-unreachable-route-fails.json#no-resolver</td><td>TR-POL-003 skip</td><td>TR-POL-003 skip</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+</table></div>
+<h3 id="set-suite-records">suite records <span class="small">trace-tests/tests/vectors</span></h3>
+<div class="wrap"><table>
+<tr><th>Vector</th><th>Expected</th><th>This verifier</th><th>Result</th></tr>
+<tr><td class="file">invalid_missing_runtime.json</td><td>rejected (schema_invalid)<br><span class="small">name: invalid; the schema requires runtime (TR-RTE-001 would also fail it from level 1)</span></td><td>rejected (schema_invalid)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">invalid_wrong_profile.json</td><td>rejected (profile_not_accepted)<br><span class="small">name: invalid; TR-ENV-001</span></td><td>rejected (profile_not_accepted)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">signed_delegated_hop.json</td><td>verified<br><span class="small">name: signed; spec 3.3 verification with freshness off (its delegation link is phase 3)</span></td><td>verified</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">signed_root.json</td><td>verified<br><span class="small">name: signed; spec 3.3 verification with freshness off</span></td><td>verified</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">valid_appraisal_full.json</td><td>verified<br><span class="small">name: valid; unsigned, so level 0 is the highest level it can meet (levels.md)</span></td><td>verified</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">valid_cmcp_runtime.json</td><td>none stated<br><span class="small">no expectation derived: a cMCP envelope whose signature is a 20-character placeholder, which cannot be an Ed25519 signature under any reading, so &#39;valid&#39; names something the vector does not say (PLAN.md finding 6)</span></td><td>refused (profile_absent)</td>
+<td><span class="st none">– no expectation</span>
+</td></tr>
+<tr><td class="file">valid_level0.json</td><td>verified<br><span class="small">name: valid at level 0; levels.md: an unsigned record is TR-SIG-005 unverified, which fails only from level 1</span></td><td>verified</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">valid_level0_with_transcript.json</td><td>verified<br><span class="small">name, as valid_level0</span></td><td>verified</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+<tr><td class="file">valid_openshell_import.json</td><td>rejected (schema_invalid)<br><span class="small">the name says valid, but appraisal.verifier is &#34;nvidia-openshell/0.3.0&#34;, the exact negative case trace-tests docs/modules/tr-apr.md gives for TR-APR-002, and the schema requires format uri; the documented rule outranks a file name (PLAN.md finding 7)</span></td><td>rejected (schema_invalid)</td>
+<td><span class="st agree">✓ agrees</span>
+</td></tr>
+</table></div>
+
+</main>
+</body>
+</html>

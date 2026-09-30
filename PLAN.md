@@ -149,10 +149,11 @@ closed. Each later phase stands alone.
    rejects it. It is the shape of a record imported from NVIDIA OpenShell.
 8. **The portable vectors distinguish few of the suite's named checks.** Deleting a check
    from this verifier changes some vector's verdict for only `TR-ENV-001`, `TR-SIG-004`,
-   `TR-SIG-005`, `TR-POL-003` and `TR-APR-002` (plus the spec-level rules). The other
-   eighteen named checks are either subsumed by schema validation or have no JSON vector
-   carrying their defect, so a second implementation cannot show from the vectors alone
-   that it performs them. The suite's own docs already list positive and negative cases
+   `TR-SIG-005`, `TR-POL-003` and `TR-APR-002` (plus the spec-level rules). Of the other
+   twenty named checks, nineteen are implemented here and are either subsumed by schema
+   validation or have no JSON vector carrying their defect (the twentieth, `TR-ANC-002`,
+   is phase 6), so a second implementation cannot show from the vectors alone that it
+   performs them. The suite's own docs already list positive and negative cases
    for each (this repository runs them in `record/rules_test.go`); published as vectors,
    they would close the gap.
 

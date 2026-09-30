@@ -162,3 +162,11 @@ var unverifiedFailsFrom = map[string]int{
 	"TR-SIG-005": 1,
 	"TR-POL-003": 2,
 }
+
+// MarshalText names the mode in JSON output.
+func (m Mode) MarshalText() ([]byte, error) {
+	if m == ModeLevel {
+		return []byte("level"), nil
+	}
+	return []byte("verify"), nil
+}

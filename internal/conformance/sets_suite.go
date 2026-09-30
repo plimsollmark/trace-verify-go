@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/plimsollmark/trace-verify-go/internal/policydir"
 	"github.com/plimsollmark/trace-verify-go/record"
 )
 
@@ -27,31 +28,9 @@ func init() {
 	)
 }
 
-// policyResolver maps a URI through the set's resolutions.json to a file in the set's
-// directory, checking the manifest's form as the README describes: an object of strings
-// to relative paths with no parent traversal. Existence is a resolve-time fact.
-func policyResolver(dir string) (func(string) ([]byte, error), error) {
-	var manifest map[string]string
-	if err := readJSON(filepath.Join(dir, "resolutions.json"), &manifest); err != nil {
-		return nil, err
-	}
-	for u, p := range manifest {
-		if filepath.IsAbs(p) || strings.Contains(filepath.ToSlash(p), "..") {
-			return nil, fmt.Errorf("resolutions.json: %q maps to %q, outside the directory", u, p)
-		}
-	}
-	return func(uri string) ([]byte, error) {
-		p, ok := manifest[uri]
-		if !ok {
-			return nil, fmt.Errorf("no route for %s", uri)
-		}
-		return os.ReadFile(filepath.Join(dir, p))
-	}, nil
-}
-
 func loadPolicyResolution(root, dir string) ([]Case, error) {
 	full := filepath.Join(root, dir)
-	resolve, err := policyResolver(full)
+	resolve, err := policydir.Open(full)
 	if err != nil {
 		return nil, err
 	}
