@@ -38,6 +38,11 @@ func Mutation(root string, sets []Set, reg Registry) []RuleCoverage {
 		m.Revocation = slices.Delete(slices.Clone(reg.Revocation), i, i+1)
 		out = append(out, RuleCoverage{Verifier: "revocation", ID: r.ID, Section: r.Section, Changed: changed(m)})
 	}
+	for i, r := range reg.Provenance {
+		m := reg
+		m.Provenance = slices.Delete(slices.Clone(reg.Provenance), i, i+1)
+		out = append(out, RuleCoverage{Verifier: "provenance", ID: r.ID, Section: r.Section, Changed: changed(m)})
+	}
 	for i, r := range reg.Chain {
 		m := reg
 		m.Chain = slices.Delete(slices.Clone(reg.Chain), i, i+1)
@@ -69,30 +74,33 @@ func sortedKeys(m map[string]bool) []string {
 // reason. The mutation test fails if a rule is load-bearing and still listed, or is not
 // load-bearing and not listed, so this list can only shrink as sets are added.
 var Uncovered = map[string]string{
-	"accepted_profiles_nonempty": "redundant for the outcome: an empty set contains no profile, so profile_accepted refuses anyway; this rule names the cause, and verifier-compatibility makes the cause informative",
-	"profile_present":            "redundant for the outcome: an absent or empty profile is in no accepted set, so profile_accepted refuses anyway; same reason",
-	"cnf_structure":              "no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs' cases",
-	"cnf_public_only":            "no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs' cases",
-	"key_pinned":                 "no registered vector signs with a key other than its trusted_key; record/rules_test.go covers it",
-	"freshness":                  "every vector carries a fixed iat, so every set runs with freshness off; record/rules_test.go covers it",
-	"nonce":                      "no registered vector issues a challenge nonce; record/rules_test.go covers it",
-	"origin_platform":            "the schema's if/then encodes spec 3.1.1 as well, and the one vector with origin (valid_openshell_import) is rejected on other grounds; record/rules_test.go covers it",
-	"TR-ENV-003":                 "no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs' cases",
-	"TR-POL-001":                 "no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs' cases",
-	"TR-POL-002":                 "no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs' cases",
-	"TR-APR-001":                 "no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs' cases",
-	"TR-APR-003":                 "no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs' cases",
-	"TR-APR-004":                 "no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs' cases",
-	"TR-APR-005":                 "no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs' cases",
-	"TR-RTE-001":                 "no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs' cases",
-	"TR-RTE-002":                 "no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs' cases",
-	"TR-RTE-003":                 "no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs' cases",
-	"TR-SCA-001":                 "no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs' cases",
-	"TR-SCA-002":                 "no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs' cases",
-	"TR-TXN-001":                 "no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs' cases",
-	"TR-TXN-002":                 "no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs' cases",
-	"TR-ANC-001":                 "no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs' cases",
-	"TR-ANC-002":                 "not implemented until PLAN.md phase 6; it reports unverified, never pass",
+	"accepted_profiles_nonempty":  "redundant for the outcome: an empty set contains no profile, so profile_accepted refuses anyway; this rule names the cause, and verifier-compatibility makes the cause informative",
+	"profile_present":             "redundant for the outcome: an absent or empty profile is in no accepted set, so profile_accepted refuses anyway; same reason",
+	"cnf_structure":               "no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs' cases",
+	"cnf_public_only":             "no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs' cases",
+	"key_pinned":                  "no registered vector signs with a key other than its trusted_key; record/rules_test.go covers it",
+	"freshness":                   "every vector carries a fixed iat, so every set runs with freshness off; record/rules_test.go covers it",
+	"nonce":                       "no registered vector issues a challenge nonce; record/rules_test.go covers it",
+	"origin_platform":             "the schema's if/then encodes spec 3.1.1 as well, and the one vector with origin (valid_openshell_import) is rejected on other grounds; record/rules_test.go covers it",
+	"TR-ENV-003":                  "no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs' cases",
+	"TR-POL-001":                  "no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs' cases",
+	"TR-POL-002":                  "no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs' cases",
+	"TR-APR-001":                  "no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs' cases",
+	"TR-APR-003":                  "no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs' cases",
+	"TR-APR-004":                  "no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs' cases",
+	"TR-APR-005":                  "no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs' cases",
+	"TR-RTE-001":                  "no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs' cases",
+	"TR-RTE-002":                  "no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs' cases",
+	"TR-RTE-003":                  "no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs' cases",
+	"TR-SCA-001":                  "no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs' cases",
+	"TR-SCA-002":                  "no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs' cases",
+	"TR-TXN-001":                  "no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs' cases",
+	"TR-TXN-002":                  "no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs' cases",
+	"TR-ANC-001":                  "no portable vector separates it from the schema rule or carries the defect; record/rules_test.go covers the suite docs' cases",
+	"artifact_digest_mismatch":    "every vector's artifact digest matches (the set separates depths, not surface defects); provenance tests cover it",
+	"builder_untrusted":           "every vector's builder is trusted; provenance tests cover it",
+	"dependency_subject_mismatch": "a check this verifier adds (the attestation is for this input's digest); no vector's dependency attestation names another digest; provenance tests cover it",
+	"TR-ANC-002":                  "not implemented until PLAN.md phase 6; it reports unverified, never pass",
 }
 
 // The pinned revisions, as PLAN.md and testdata/vectors/PROVENANCE.md record them

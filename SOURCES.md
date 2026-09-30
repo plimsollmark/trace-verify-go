@@ -31,6 +31,7 @@ documents listed below, not as files read.
 | `examples/delegation-link/README.md` and its 24 vectors | 2026-09-30 | phase 3 adapter |
 | `examples/revocation-bundle/README.md` and its 28 vectors | 2026-09-30 | phase 3 adapter |
 | `examples/reproducibility-claim/README.md` and its 21 vectors | 2026-09-30 | phase 3 adapter |
+| `spec/trace-v0.2.md` section 3.3.1; `examples/build-provenance-depth/README.md` and its 6 vectors | 2026-09-30 | phase 4 |
 | `schema/trace-revocation.json`, `schema/trace-revocation-bundle.json` | 2026-09-30 | the bundle and statement format, and the bundle signature pre-image (its `sig` description) |
 | `docs/rfcs/a2a-delegation-profile.md`, sections 1 to 5 | 2026-09-30 | the ten chain rules, their classes, and the three decisions (preimage, no cycle rule, unreadable is unverifiable) |
 
