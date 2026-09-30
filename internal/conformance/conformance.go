@@ -29,7 +29,21 @@ type Expect struct {
 	// Source says where the expectation came from when the vector has no expected
 	// block (the suite's top-level vectors are expected by their file names).
 	Source string
+	// Finding, when set, replaces the outcome comparison: the vector asserts one rule's
+	// status and nothing else (policy-resolution: "One value: the status of the
+	// TR-POL-003 finding").
+	Finding *FindingExpect
 }
+
+// FindingExpect is one rule's expected status.
+type FindingExpect struct {
+	Rule   string
+	Status record.Status
+}
+
+// Informational reports whether nothing is expected: the case is run and shown, and
+// neither passes nor fails.
+func (e Expect) Informational() bool { return e.Outcome == "" && e.Finding == nil }
 
 // Case is one vector, ready to run.
 type Case struct {
@@ -94,9 +108,19 @@ func judge(c Case, rules []record.Rule) Verdict {
 		}
 	}
 	v.Got = c.Run(rules)
-	if v.Got.Outcome != c.Expect.Outcome {
+	switch {
+	case c.Expect.Informational():
+		return v
+	case c.Expect.Finding != nil:
+		f, ok := v.Got.Finding(c.Expect.Finding.Rule)
+		if !ok {
+			v.Problems = append(v.Problems, "no finding for "+c.Expect.Finding.Rule)
+		} else if f.Status != c.Expect.Finding.Status {
+			v.Problems = append(v.Problems, fmt.Sprintf("%s is %s (%s), want %s", f.Rule, f.Status, f.Detail, c.Expect.Finding.Status))
+		}
+	case v.Got.Outcome != c.Expect.Outcome:
 		v.Problems = append(v.Problems, fmt.Sprintf("outcome %s (%s), want %s", v.Got.Outcome, v.Got.Code, c.Expect.Outcome))
-	} else if c.Expect.Code != "" && v.Got.Code != c.Expect.Code {
+	case c.Expect.Code != "" && v.Got.Code != c.Expect.Code:
 		msg := fmt.Sprintf("code %q, vector names %q", v.Got.Code, c.Expect.Code)
 		if c.Expect.CodeInformative {
 			v.Notes = append(v.Notes, msg)

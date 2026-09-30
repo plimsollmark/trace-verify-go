@@ -1,6 +1,9 @@
 package schema
 
 import (
+	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -103,5 +106,19 @@ func TestCompileRefusesUnknownKeywords(t *testing.T) {
 		if _, err := Compile([]byte(doc)); err == nil {
 			t.Errorf("%s compiled", doc)
 		}
+	}
+}
+
+func TestEmbeddedSchemaIsThePinnedOne(t *testing.T) {
+	sum := sha256.Sum256(TraceClaimV02)
+	if got := hex.EncodeToString(sum[:]); got != TraceClaimV02SHA256 {
+		t.Fatalf("embedded schema SHA-256 %s, want %s", got, TraceClaimV02SHA256)
+	}
+	vendored, err := os.ReadFile(filepath.Join(vectors, "schema/trace-claim.json"))
+	if err != nil || !bytes.Equal(vendored, TraceClaimV02) {
+		t.Fatalf("embedded schema differs from the vendored copy (%v)", err)
+	}
+	if _, err := TraceClaim(); err != nil {
+		t.Fatal(err)
 	}
 }

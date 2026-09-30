@@ -1,6 +1,6 @@
 # Plan: a Go verifier for TRACE v0.2, written from the specification
 
-Status: **Phase 1 done, phase 2 next** (2026-09-30). Update the status line and the phase
+Status: **Phases 0 to 2 done, phase 3 next** (2026-09-30). Update the status line and the phase
 table as work lands.
 
 ## Goal
@@ -77,6 +77,14 @@ envelope shapes; each set gets an adapter that decodes its files into a common c
 Adding a set is adding an adapter, not a test file per vector. The runner also writes an
 HTML conformance page (per set: passed, failed, why), so the result can be looked at.
 
+**Two modes over one registry.** The spec's verification (3.3) is gated: nothing after
+the signature is read unless the binding holds, and a record with no verifiable binding
+is rejected. The suite's level check reports every check that applies at the level,
+whatever the others found, and applies its per-code table for when "unverified" fails a
+run (unsigned is tolerated at level 0). The spec itself describes that alignment ("records
+without a verifiable signature fail at conformance level 1 and above"), so both are
+provided and neither is presented as the other.
+
 **Mutation check on ourselves.** The suite's method (its `docs/conformance-method.md`)
 asks whether each rule is load-bearing: delete it and count the vectors that notice.
 Because the verifier runs a registry, the same check runs here: rebuild the registry
@@ -89,7 +97,7 @@ is reported, which is also a finding for the suite.
 |---|---|---|---|
 | 0 | Repository, plan, clean-room log, vendored vectors with provenance, gate | none | done |
 | 1 | `jcs`, `jwk`, embedded-signature binding, freshness, profile compatibility | spec `canonicalization-boundary` (6), `verifier-compatibility` (8); suite `canonicalization` (4) and the four `invalid_canonical_*` | done: 22 of 22 pass; mutation check passes (6 rules not yet load-bearing, each with its reason in `internal/conformance`) |
-| 2 | Level 0 to 2 named checks, caller-supplied policy resolver (TR-POL-003) | suite `tests/vectors` (13), `policy-resolution` (11) | pending |
+| 2 | Level 0 to 2 named checks, caller-supplied policy resolver (TR-POL-003), the schema as data, two modes (spec verification and suite level check) | suite `tests/vectors` (9), `policy-resolution` (11, each run with and without a resolver) | done: policy-resolution 22/22; suite records 8/8 judged plus 1 reported without an expectation (finding 6); `record/rules_test.go` runs the 85 positive and negative cases the suite docs list |
 | 3 | Delegation digests, revocation, reproducibility-claim shape rules | `delegation-link` (24), `revocation-bundle` (28), `reproducibility-claim` (21) | pending |
 | 4 | References: citation resolution, condition appraisal, approval outcome, build-provenance depth | `citation-resolution` (16), `condition-appraisal` (9 files), `chap-approval-outcome` (7 files), `build-provenance-depth` (6) | pending |
 | 5 | Action receipts and gap disclosure (informative in the spec) | `action-receipts/conformance` (30), `gap-disclosure` (20), `acta` (6) | pending |
@@ -124,6 +132,29 @@ closed. Each later phase stands alone.
    anything"); what they cannot show is that the specific rule exists. This is the
    non-load-bearing case the suite's `conformance-method.md` describes, observed from a
    second implementation.
+5. **The suite's docs are narrower than the schema on two digests.** `TR-SCA-002` and
+   `TR-TXN-001` are documented as `sha256:` only; the schema admits `sha384:` for
+   `build_provenance.digest` and `tool_transcript.hash`. This verifier follows the schema,
+   since the spec makes a disagreeing supporting artifact the defect.
+6. **cMCP envelopes cannot be verified from the TRACE spec alone.** 3.2.2 says only
+   "cMCP's RuntimeClaim (signature over the canonical record, key in trace.cnf.jwk)",
+   without saying which object is the canonical record, and the suite's
+   `valid_cmcp_runtime.json` carries a 20-character signature, which cannot be an Ed25519
+   signature under any reading. This verifier does not implement the cMCP envelope; the
+   vector is run and reported without a verdict.
+7. **`valid_openshell_import.json` is invalid by the suite's own documented rule.** Its
+   `appraisal.verifier` is `nvidia-openshell/0.3.0`, which `docs/modules/tr-apr.md` gives,
+   word for word, as the negative case for `TR-APR-002` ("no scheme"), and the schema
+   requires `format: uri`. Either the file name or the record is wrong; this verifier
+   rejects it. It is the shape of a record imported from NVIDIA OpenShell.
+8. **The portable vectors distinguish few of the suite's named checks.** Deleting a check
+   from this verifier changes some vector's verdict for only `TR-ENV-001`, `TR-SIG-004`,
+   `TR-SIG-005`, `TR-POL-003` and `TR-APR-002` (plus the spec-level rules). The other
+   eighteen named checks are either subsumed by schema validation or have no JSON vector
+   carrying their defect, so a second implementation cannot show from the vectors alone
+   that it performs them. The suite's own docs already list positive and negative cases
+   for each (this repository runs them in `record/rules_test.go`); published as vectors,
+   they would close the gap.
 
 ## Decisions that are not this plan's to make
 

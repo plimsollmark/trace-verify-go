@@ -24,6 +24,10 @@ documents listed below, not as files read.
 | `examples/README.md` | 2026-09-30 | vector set overview |
 | `examples/canonicalization-boundary/README.md`, `05-ascii-escaped-signature.json` | 2026-09-30 | vector envelope shape |
 | top-level keys of every `*.json` under `examples/` (a `jq` survey) | 2026-09-30 | adapter design |
+| `spec/trace-v0.2.md` section 5 (cMCP) | 2026-09-30 | whether the cMCP envelope is defined here (it is not) |
+| `docs/trust-levels.md` | 2026-09-30 | what each level asks; issuer keys come from the recipient's own channel |
+| `examples/verifier-compatibility/README.md` and its eight vectors | 2026-09-30 | phase 1 adapter |
+| `schema/trace-claim.json` (keyword census; field patterns and enums via `jq`) | 2026-09-30 | the schema evaluator and the named checks |
 
 ## trace-tests at `v0.6.1`
 
@@ -33,6 +37,9 @@ documents listed below, not as files read.
 | `docs/levels.md`, `docs/error-codes.md` | 2026-09-30 | the named checks and their levels |
 | `docs/modules/tr-sig.md`, `tr-env.md`, `tr-pol.md`, `tr-apr.md` | 2026-09-30 | per-module checks |
 | top-level keys of every `*.json` under `tests/vectors/` (a `jq` survey) | 2026-09-30 | adapter design |
+| `docs/modules/tr-rte.md`, `tr-sca.md`, `tr-txn.md`, `tr-anc.md`, `docs/modules.md` | 2026-09-30 | levels 1 and 2 checks |
+| `tests/vectors/policy-resolution/README.md`, `resolutions.json`, and its vectors | 2026-09-30 | phase 2 adapter |
+| `tests/vectors/invalid_canonical_*.json`, `canonicalization/*.json` and the nine other top-level vectors | 2026-09-30 | phase 1 and 2 adapters |
 
 ## Standards (not TRACE files; listed so the inputs are complete)
 
