@@ -314,7 +314,5 @@ count is not the one the vectors produced.
 
 ## Licensing
 
-Apache License 2.0. The Community Specification License 1.0 that covers the TRACE
-specification is included in the source root, as its section 2.1.3.1 requires of an
-implementation. Vendored vectors and registry data keep their own licenses, recorded in
-their `PROVENANCE.md` files and in [NOTICE](NOTICE).
+Apache License 2.0. Vendored vectors, schemas and registry data keep their own licenses,
+recorded in their `PROVENANCE.md` files and in [NOTICE](NOTICE).

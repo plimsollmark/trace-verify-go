@@ -1,6 +1,6 @@
 # Plan: a Go verifier for TRACE v0.2, written from the specification
 
-Status: **Phases 0 to 7 done; publication is the next step, and waits on the decisions below** (2026-09-30). Update the status line and the phase
+Status: **Phases 0 to 7 done; published as `v0.1.0`** (2026-09-30). Update the status line and the phase
 table as work lands.
 
 ## Goal
@@ -117,10 +117,9 @@ renders them from there. Add new ones there, never here.
 
 ## Publication
 
-Phases 5 to 7 are done. The repository exists at the module path, private, so remote
-agent sessions can work on it (2026-09-30). Publishing is: settle the licensing question
-below; make the repository public; tag the release commit `v0.1.0`, the version the
-conformance statement names; then offer [REPORT.md](REPORT.md) to the TRACE project.
+Published 2026-09-30: the repository at the module path made public, the release commit
+tagged `v0.1.0` (the version the conformance statement names), and [REPORT.md](REPORT.md)
+offered to the TRACE project in one trace-spec issue.
 
 `CLAUDE.md` is tracked so that an agent session started from the hosted repository
 loads [AGENTS.md](AGENTS.md), and with it the clean-room rule, without being told to.
@@ -129,11 +128,13 @@ loads [AGENTS.md](AGENTS.md), and with it the clean-room rule, without being tol
 
 - **Where it is published: decided.** The module path
   `github.com/plimsollmark/trace-verify-go` stands.
-- **The spec license's patent terms.** The Community Specification License 1.0 extends
-  its patent grant to an implementation only if the implementation carries the license in
-  its source root (its 2.1.3.1), and accepting it grants the same royalty-free license on
-  the implementer's own necessary claims (2.1.2). The file is in the root; confirm before
-  publishing.
+- **The spec license's patent terms: decided, the license is not included.** The
+  Community Specification License 1.0 extends its patent grant to an implementation only
+  if the implementation carries the license in its source root (its 2.1.3.1), and
+  accepting it grants the same royalty-free license on the implementer's own necessary
+  claims (2.1.2). Its copyright terms ask only for attribution (1.2), which
+  [testdata/vectors/PROVENANCE.md](testdata/vectors/PROVENANCE.md) gives for the three
+  vendored schema files.
 - **Upstream contribution mechanics.** TRACE requires a DCO sign-off on commits to its
   repositories and allows agent-written contributions on one condition: the submitter
   can explain the change "with the agent closed". That applies to anything offered

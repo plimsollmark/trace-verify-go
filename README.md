@@ -17,10 +17,8 @@ section 3.3.2) and the agent's Trust Record that references them are verified en
 end, three tampered copies fail, and the example's README says what the evidence does
 not prove.
 
-Licensed under the Apache License 2.0 ([LICENSE](LICENSE)). The Community Specification
-License 1.0 that covers the TRACE specification is included as
-[COMMUNITY-SPECIFICATION-LICENSE.md](COMMUNITY-SPECIFICATION-LICENSE.md), as its
-section 2.1.3.1 requires of an implementation.
+Licensed under the Apache License 2.0 ([LICENSE](LICENSE)). The vendored TRACE files keep
+their own licenses, listed in [NOTICE](NOTICE).
 
 ## Use
 
