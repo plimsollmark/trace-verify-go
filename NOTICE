@@ -1,0 +1,7 @@
+trace-verify-go
+
+This product includes test vectors and a schema from the TRACE Specification,
+a Series of LF Projects, LLC (https://github.com/agentrust-io/trace-spec and
+https://github.com/agentrust-io/trace-tests), copied unchanged under
+testdata/vectors/. Their sources, revisions and licenses are listed in
+testdata/vectors/PROVENANCE.md.

@@ -1,0 +1,5 @@
+/trace-verify
+/trace-conformance
+/tmp/
+*.test
+*.out

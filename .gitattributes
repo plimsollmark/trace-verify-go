@@ -1,0 +1,2 @@
+# Vendored vectors are compared by digest: never translate their bytes.
+testdata/vectors/** -text
