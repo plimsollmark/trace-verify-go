@@ -18,6 +18,7 @@ documents listed below, not as files read.
 |---|---|---|
 | `LICENSE`, `NOTICE`, `Governance/COMMUNITY-SPECIFICATION-LICENSE.md` | 2026-09-30 | licensing of the spec, schema and vectors |
 | `CONTRIBUTING.md` (AI and DCO sections) | 2026-09-30 | contribution terms |
+| `SECURITY.md` | 2026-09-30 | how findings with security impact are reported |
 | `ROADMAP.md`, `README.md` (lines naming Go) | 2026-09-30 | whether a Go verifier is planned or claimed |
 | `spec/trace-v0.2.md`, lines 1 to 110 and 155 to 524 | 2026-09-30 | authority, trust record, wire format, signing, revocation, verification |
 | `docs/conformance-method.md` | 2026-09-30 | how the vectors are built |
