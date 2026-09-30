@@ -17,8 +17,13 @@ section 3.3.2) and the agent's Trust Record that references them are verified en
 end, three tampered copies fail, and the example's README says what the evidence does
 not prove.
 
-Licensed under the Apache License 2.0 ([LICENSE](LICENSE)). The vendored TRACE files keep
-their own licenses, listed in [NOTICE](NOTICE).
+**Checked against Agent Action Capsule's fixture:** the canonicalizer reproduces both
+digests pinned by the [AAC and TRACE digest-agreement fixture](https://github.com/action-state-group/agent-action-capsule/blob/eabc4adf271f6ed7b08ed4d276adff426c4196f0/docs/interop/aac-trace-digest-agreement.md),
+which says the two formats' canonical forms agree, and refuses its integer of 2^53 as
+TRACE section 3.2.2 requires ([jcs/interop_test.go](jcs/interop_test.go)).
+
+Licensed under the Apache License 2.0 ([LICENSE](LICENSE)). The vendored TRACE and Agent
+Action Capsule files keep their own licenses, listed in [NOTICE](NOTICE).
 
 ## Use
 

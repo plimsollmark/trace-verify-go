@@ -10,3 +10,9 @@ It also includes registry entries, inclusion proofs and anchored claims from the
 Registry (https://github.com/agentrust-io/trace-registry), Copyright 2026 AgenTrust
 Contributors, licensed under CC BY 4.0 and copied unchanged under testdata/registry/.
 Their source and revision are listed in testdata/registry/PROVENANCE.md.
+
+It also includes the digest-agreement fixture of the Agent Action Capsule project
+(https://github.com/action-state-group/agent-action-capsule), Copyright (c) 2026 Action
+State Group, Inc., licensed under the BSD 3-Clause License and copied unchanged, with
+that license, under testdata/interop/aac/. Its source and revision are listed in
+testdata/interop/aac/PROVENANCE.md.

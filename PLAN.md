@@ -121,6 +121,10 @@ Published 2026-09-30: the repository at the module path made public, the release
 tagged `v0.1.0` (the version the conformance statement names), and [REPORT.md](REPORT.md)
 offered to the TRACE project in one trace-spec issue.
 
+After the tag: `jcs/interop_test.go` checks the canonicalizer against the Agent Action
+Capsule project's AAC and TRACE digest-agreement fixture (vendored under
+`testdata/interop/aac/`), which pins the digests both formats must produce.
+
 `CLAUDE.md` is tracked so that an agent session started from the hosted repository
 loads [AGENTS.md](AGENTS.md), and with it the clean-room rule, without being told to.
 

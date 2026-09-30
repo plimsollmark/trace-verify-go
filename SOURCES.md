@@ -90,6 +90,15 @@ no generator, nothing outside these files):
 
 No Python in this repository (`src/trace_verify/`, `tools/`, `tests/`) was read.
 
+## After v0.1.0 (2026-09-30)
+
+| Repository and file | Date | Why |
+|---|---|---|
+| trace-spec at `152c843`: a search of its `*.md`, `*.json` and `*.yaml` files for Agent Action Capsule terms (matching lines only), and the file list of `docs/crosswalks/` | 2026-09-30 | whether TRACE carries an AAC crosswalk (it did not) |
+| agent-action-capsule at `eabc4ad` (not a TRACE repository): `docs/interop/aac-trace-digest-agreement.md`, the three fixture files vendored under `testdata/interop/aac/`, `LICENSE`, `LICENSING.md`, `NOTICE` | 2026-09-30 | the digest-agreement fixture `jcs/interop_test.go` checks; its license |
+
+No Python from agent-action-capsule (`python/`, including the fixture's own check) was read.
+
 ## Standards (not TRACE files; listed so the inputs are complete)
 
 | Document | Date | Why |
