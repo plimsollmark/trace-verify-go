@@ -117,10 +117,13 @@ renders them from there. Add new ones there, never here.
 
 ## Publication
 
-Phases 5 to 7 are done. Publishing is: settle the licensing question below; create the
-public repository at the module path and push `main`; tag that commit `v0.1.0`, the
-version the conformance statement names; then offer [REPORT.md](REPORT.md) to the TRACE
-project.
+Phases 5 to 7 are done. The repository exists at the module path, private, so remote
+agent sessions can work on it (2026-09-30). Publishing is: settle the licensing question
+below; make the repository public; tag the release commit `v0.1.0`, the version the
+conformance statement names; then offer [REPORT.md](REPORT.md) to the TRACE project.
+
+`CLAUDE.md` is tracked so that an agent session started from the hosted repository
+loads [AGENTS.md](AGENTS.md), and with it the clean-room rule, without being told to.
 
 ## Decisions that are not this plan's to make
 
