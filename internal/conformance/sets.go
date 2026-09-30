@@ -86,8 +86,8 @@ func loadCanonicalizationBoundary(root, dir string) ([]Case, error) {
 		cases = append(cases, Case{
 			File:   rel(root, p),
 			Name:   v.Name,
-			Expect: Expect{Outcome: record.Outcome(v.Expected.Outcome), Code: v.Expected.Failure},
-			Run:    func(rules []record.Rule) record.Result { return record.Evaluate(rules, rec, opts) },
+			Expect: Expect{Outcome: v.Expected.Outcome, Code: v.Expected.Failure},
+			Run:    func(reg Registry) Observed { return fromRecord(record.Evaluate(reg.Record, rec, opts)) },
 		})
 	}
 	return cases, nil
@@ -139,11 +139,12 @@ func loadVerifierCompatibility(root, dir string) ([]Case, error) {
 			File: rel(root, p),
 			Name: v.Name,
 			// The README: "failure is informative ... no conformance assertion is made on it".
-			Expect: Expect{Outcome: record.Outcome(v.Expected.Outcome), Code: v.Expected.Failure, CodeInformative: true},
-			Run:    func(rules []record.Rule) record.Result { return record.Evaluate(rules, rec, opts) },
+			Expect: Expect{Outcome: v.Expected.Outcome, Code: v.Expected.Failure, CodeInformative: true},
+			Run:    func(reg Registry) Observed { return fromRecord(record.Evaluate(reg.Record, rec, opts)) },
 			// Spec 3.3: on success the verifier MUST report the profile and the complete
 			// accepted set.
-			Extra: func(r record.Result) []string {
+			Extra: func(o Observed) []string {
+				r := *o.Record
 				if want == nil || r.Outcome != record.Verified {
 					return nil
 				}
@@ -196,9 +197,10 @@ func loadSuiteCanonicalization(root, dir string) ([]Case, error) {
 		cases = append(cases, Case{
 			File:   rel(root, p),
 			Name:   v.Name,
-			Expect: Expect{Outcome: record.Verified},
-			Run:    func(rules []record.Rule) record.Result { return record.Evaluate(rules, rec, opts) },
-			Extra: func(r record.Result) []string {
+			Expect: Expect{Outcome: string(record.Verified)},
+			Run:    func(reg Registry) Observed { return fromRecord(record.Evaluate(reg.Record, rec, opts)) },
+			Extra: func(o Observed) []string {
+				r := *o.Record
 				if f, _ := r.Finding("signature"); f.Status != record.Pass {
 					return []string{fmt.Sprintf("TR-SIG-005 is PASS in the vector; signature rule is %s", f.Status)}
 				}
@@ -241,8 +243,8 @@ func loadSuiteInvalidCanonical(root, dir string) ([]Case, error) {
 		cases = append(cases, Case{
 			File:   rel(root, p),
 			Name:   name,
-			Expect: Expect{Outcome: record.Rejected, Code: code, Source: "file name (the vector has no expected block)"},
-			Run:    func(rules []record.Rule) record.Result { return record.Evaluate(rules, raw, opts) },
+			Expect: Expect{Outcome: string(record.Rejected), Code: code, Source: "file name (the vector has no expected block)"},
+			Run:    func(reg Registry) Observed { return fromRecord(record.Evaluate(reg.Record, raw, opts)) },
 		})
 		delete(want, name)
 	}

@@ -18,7 +18,6 @@ import (
 	"strings"
 
 	"github.com/plimsollmark/trace-verify-go/internal/conformance"
-	"github.com/plimsollmark/trace-verify-go/record"
 	"github.com/plimsollmark/trace-verify-go/schema"
 )
 
@@ -51,9 +50,9 @@ type setView struct {
 }
 
 type ruleView struct {
-	ID, Suite, Section, Reason string
-	Level, Changed             int
-	Width                      int // bar width in pixels
+	ID, Suite, Section, Reason, Verifier string
+	Level, Changed                       int
+	Width                                int // bar width in pixels
 }
 
 type page struct {
@@ -67,7 +66,7 @@ type page struct {
 
 func run(root, planPath, out string) (disagree int, err error) {
 	p := page{SpecCommit: conformance.SpecCommit, SuiteTag: conformance.SuiteTag, SchemaSHA: schema.TraceClaimV02SHA256}
-	for _, sr := range conformance.Run(root, conformance.Sets, record.Rules) {
+	for _, sr := range conformance.Run(root, conformance.Sets, conformance.Default()) {
 		sv := setView{Name: sr.Set.Name, Slug: "set-" + strings.ReplaceAll(sr.Set.Name, " ", "-"), About: sr.Set.About, Dir: sr.Set.Dir}
 		if sr.Err != nil {
 			sv.Err = sr.Err.Error()
@@ -96,16 +95,16 @@ func run(root, planPath, out string) (disagree int, err error) {
 	}
 	p.Disagree = p.Judged - p.Agree
 
-	cov := conformance.Mutation(root, conformance.Sets, record.Rules)
+	cov := conformance.Mutation(root, conformance.Sets, conformance.Default())
 	most := 1
 	for _, c := range cov {
 		most = max(most, len(c.Changed))
 	}
 	for _, c := range cov {
-		rv := ruleView{ID: c.Rule.ID, Suite: c.Rule.Suite, Section: c.Rule.Section, Level: c.Rule.Level,
+		rv := ruleView{ID: c.ID, Suite: c.Suite, Section: c.Section, Level: c.Level, Verifier: c.Verifier,
 			Changed: len(c.Changed), Width: 2 + 200*len(c.Changed)/most}
 		if len(c.Changed) == 0 {
-			rv.Reason = conformance.Uncovered[c.Rule.ID]
+			rv.Reason = conformance.Uncovered[c.ID]
 		} else {
 			p.Distinguished++
 		}
@@ -137,27 +136,35 @@ func expected(e conformance.Expect) string {
 		return "none stated"
 	case e.Finding != nil:
 		return e.Finding.Rule + " " + string(e.Finding.Status)
+	case e.Codes != nil:
+		if len(e.Codes) == 0 {
+			return e.Outcome
+		}
+		return e.Outcome + " (" + strings.Join(e.Codes, ", ") + ")"
 	case e.Code != "" && e.CodeInformative:
-		return string(e.Outcome) + " (" + e.Code + ", informative)"
+		return e.Outcome + " (" + e.Code + ", informative)"
 	case e.Code != "":
-		return string(e.Outcome) + " (" + e.Code + ")"
+		return e.Outcome + " (" + e.Code + ")"
 	}
-	return string(e.Outcome)
+	return e.Outcome
 }
 
 func got(v conformance.Verdict) string {
-	if f := v.Case.Expect.Finding; f != nil {
-		if g, ok := v.Got.Finding(f.Rule); ok {
+	if f := v.Case.Expect.Finding; f != nil && v.Got.Record != nil {
+		if g, ok := v.Got.Record.Finding(f.Rule); ok {
 			return f.Rule + " " + string(g.Status)
 		}
 	}
 	if v.Got.Outcome == "" {
 		return "not run"
 	}
-	if v.Got.Code != "" {
-		return string(v.Got.Outcome) + " (" + v.Got.Code + ")"
+	if len(v.Got.Codes) > 0 {
+		return v.Got.Outcome + " (" + strings.Join(v.Got.Codes, ", ") + ")"
 	}
-	return string(v.Got.Outcome)
+	if v.Got.Code != "" {
+		return v.Got.Outcome + " (" + v.Got.Code + ")"
+	}
+	return v.Got.Outcome
 }
 
 var (
@@ -257,8 +264,8 @@ ol.findings li { margin: 0 0 10px; max-width: 900px; }
 <h2 id="rules">Which rules the vectors can tell apart</h2>
 <p class="small">Each rule is deleted in turn and the vectors are re-run: the bar is the number of vectors whose verdict changes. A rule no vector notices could be missing from an implementation that still passes every vector; the reason column says why, and where this repository tests it instead.</p>
 <div class="wrap"><table>
-<tr><th>Rule</th><th>Suite code</th><th>Level</th><th>Vectors that notice its deletion</th><th>Source</th></tr>
-{{range .RuleRows}}<tr><td class="nowrap"><code>{{.ID}}</code></td><td class="nowrap">{{.Suite}}</td><td>{{.Level}}</td>
+<tr><th>Rule</th><th>Verifier</th><th>Suite code</th><th>Level</th><th>Vectors that notice its deletion</th><th>Source</th></tr>
+{{range .RuleRows}}<tr><td class="nowrap"><code>{{.ID}}</code></td><td>{{.Verifier}}</td><td class="nowrap">{{.Suite}}</td><td>{{.Level}}</td>
 <td>{{if .Changed}}<span class="bar" style="width:{{.Width}}px"></span>{{.Changed}}{{else}}<span class="bar zero" style="width:2px"></span>0<br><span class="small">{{.Reason}}</span>{{end}}</td><td class="small">{{.Section}}</td></tr>
 {{end}}</table></div>
 

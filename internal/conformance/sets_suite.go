@@ -70,9 +70,9 @@ func loadPolicyResolution(root, dir string) ([]Case, error) {
 				File:   rel(root, p) + map[bool]string{true: "", false: "#no-resolver"}[withResolver],
 				Name:   name,
 				Expect: Expect{Finding: &FindingExpect{Rule: "TR-POL-003", Status: expect}},
-				Run: func(rules []record.Rule) record.Result {
+				Run: func(reg Registry) Observed {
 					opts.Mode = record.ModeLevel
-					return record.Evaluate(rules, rec, opts)
+					return fromRecord(record.Evaluate(reg.Record, rec, opts))
 				},
 			})
 		}
@@ -127,11 +127,12 @@ func loadSuiteRecords(root, dir string) ([]Case, error) {
 		c := Case{
 			File:   rel(root, p),
 			Name:   name,
-			Expect: Expect{Outcome: e.outcome, Code: e.code, Source: e.source},
-			Run:    func(rules []record.Rule) record.Result { return record.Evaluate(rules, raw, opts) },
+			Expect: Expect{Outcome: string(e.outcome), Code: e.code, Source: e.source},
+			Run:    func(reg Registry) Observed { return fromRecord(record.Evaluate(reg.Record, raw, opts)) },
 		}
 		if name == "valid_openshell_import" { // pin the reason, not only the outcome
-			c.Extra = func(r record.Result) []string {
+			c.Extra = func(o Observed) []string {
+				r := *o.Record
 				if f, _ := r.Finding("TR-APR-002"); f.Status != record.Fail {
 					return []string{"TR-APR-002 is " + string(f.Status) + ", want fail"}
 				}

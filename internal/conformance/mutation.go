@@ -2,39 +2,48 @@ package conformance
 
 import (
 	"slices"
-
-	"github.com/plimsollmark/trace-verify-go/record"
 )
 
 // RuleCoverage is how many vectors notice one rule's deletion.
 type RuleCoverage struct {
-	Rule    record.Rule
-	Changed []string // vector files whose verdict changes without the rule
+	Verifier           string // "record" or "chain"
+	ID, Suite, Section string
+	Level              int
+	Changed            []string // vector files whose verdict changes without the rule
 }
 
-// Mutation deletes each rule in turn and records the vectors whose verdict changes: the
-// method in trace-spec docs/conformance-method.md ("delete the rule and count the
-// vectors that notice"), applied to this verifier.
-func Mutation(root string, sets []Set, rules []record.Rule) []RuleCoverage {
-	base := verdicts(root, sets, rules)
-	var out []RuleCoverage
-	for i, r := range rules {
-		mutant := slices.Delete(slices.Clone(rules), i, i+1)
-		rc := RuleCoverage{Rule: r}
+// Mutation deletes each rule of each verifier in turn and records the vectors whose
+// verdict changes: the method in trace-spec docs/conformance-method.md ("delete the rule
+// and count the vectors that notice"), applied to this verifier.
+func Mutation(root string, sets []Set, reg Registry) []RuleCoverage {
+	base := verdicts(root, sets, reg)
+	changed := func(mutant Registry) []string {
+		var out []string
 		got := verdicts(root, sets, mutant)
 		for _, k := range sortedKeys(base) {
 			if got[k] != base[k] {
-				rc.Changed = append(rc.Changed, k)
+				out = append(out, k)
 			}
 		}
-		out = append(out, rc)
+		return out
+	}
+	var out []RuleCoverage
+	for i, r := range reg.Record {
+		m := reg
+		m.Record = slices.Delete(slices.Clone(reg.Record), i, i+1)
+		out = append(out, RuleCoverage{Verifier: "record", ID: r.ID, Suite: r.Suite, Section: r.Section, Level: r.Level, Changed: changed(m)})
+	}
+	for i, r := range reg.Chain {
+		m := reg
+		m.Chain = slices.Delete(slices.Clone(reg.Chain), i, i+1)
+		out = append(out, RuleCoverage{Verifier: "chain", ID: r.Code, Section: "a2a-delegation-profile " + r.Section, Changed: changed(m)})
 	}
 	return out
 }
 
-func verdicts(root string, sets []Set, rules []record.Rule) map[string]bool {
+func verdicts(root string, sets []Set, reg Registry) map[string]bool {
 	out := map[string]bool{}
-	for _, sr := range Run(root, sets, rules) {
+	for _, sr := range Run(root, sets, reg) {
 		for _, v := range sr.Verdicts {
 			out[v.Case.File] = v.Passed()
 		}

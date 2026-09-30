@@ -14,18 +14,22 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/plimsollmark/trace-verify-go/chain"
 	"github.com/plimsollmark/trace-verify-go/record"
 )
 
 // Expect is what a vector requires.
 type Expect struct {
-	Outcome record.Outcome
+	Outcome string
 	// Code is the condition the vector names, or "" when it names none. When
 	// CodeInformative is set, the vector says the name is not a conformance assertion
 	// (verifier-compatibility's README: "failure is informative"), so a different code
 	// is reported but does not fail the case.
 	Code            string
 	CodeInformative bool
+	// Codes, when set, must equal the codes reported, in any order (a vector that lists
+	// every finding it expects, as delegation-link does).
+	Codes []string
 	// Source says where the expectation came from when the vector has no expected
 	// block (the suite's top-level vectors are expected by their file names).
 	Source string
@@ -50,10 +54,10 @@ type Case struct {
 	File   string // relative to the vectors root
 	Name   string
 	Expect Expect
-	// Run verifies the vector's input with the given rule registry.
-	Run func(rules []record.Rule) record.Result
+	// Run verifies the vector's input with the given registry.
+	Run func(Registry) Observed
 	// Extra, when set, checks what Expect cannot express and returns each problem.
-	Extra func(record.Result) []string
+	Extra func(Observed) []string
 	// Premise, when set, checks an assumption the vector makes about the verifier;
 	// a lapsed premise fails the case rather than skipping it (the set's own rule).
 	Premise func() error
@@ -70,7 +74,7 @@ type Set struct {
 // Verdict is one case's result.
 type Verdict struct {
 	Case     Case
-	Got      record.Result
+	Got      Observed
 	Problems []string // why it failed; empty on pass
 	Notes    []string // informative differences that do not fail it
 }
@@ -86,20 +90,20 @@ type SetResult struct {
 }
 
 // Run loads and runs every set against the given rules.
-func Run(root string, sets []Set, rules []record.Rule) []SetResult {
+func Run(root string, sets []Set, reg Registry) []SetResult {
 	var out []SetResult
 	for _, s := range sets {
 		cases, err := s.Load(root, s.Dir)
 		sr := SetResult{Set: s, Err: err}
 		for _, c := range cases {
-			sr.Verdicts = append(sr.Verdicts, judge(c, rules))
+			sr.Verdicts = append(sr.Verdicts, judge(c, reg))
 		}
 		out = append(out, sr)
 	}
 	return out
 }
 
-func judge(c Case, rules []record.Rule) Verdict {
+func judge(c Case, reg Registry) Verdict {
 	v := Verdict{Case: c}
 	if c.Premise != nil {
 		if err := c.Premise(); err != nil {
@@ -107,12 +111,16 @@ func judge(c Case, rules []record.Rule) Verdict {
 			return v
 		}
 	}
-	v.Got = c.Run(rules)
+	v.Got = c.Run(reg)
 	switch {
 	case c.Expect.Informational():
 		return v
 	case c.Expect.Finding != nil:
-		f, ok := v.Got.Finding(c.Expect.Finding.Rule)
+		var f record.Finding
+		ok := v.Got.Record != nil
+		if ok {
+			f, ok = v.Got.Record.Finding(c.Expect.Finding.Rule)
+		}
 		if !ok {
 			v.Problems = append(v.Problems, "no finding for "+c.Expect.Finding.Rule)
 		} else if f.Status != c.Expect.Finding.Status {
@@ -120,6 +128,8 @@ func judge(c Case, rules []record.Rule) Verdict {
 		}
 	case v.Got.Outcome != c.Expect.Outcome:
 		v.Problems = append(v.Problems, fmt.Sprintf("outcome %s (%s), want %s", v.Got.Outcome, v.Got.Code, c.Expect.Outcome))
+	case c.Expect.Codes != nil && !sameSet(c.Expect.Codes, v.Got.Codes):
+		v.Problems = append(v.Problems, fmt.Sprintf("codes %q, want %q", v.Got.Codes, c.Expect.Codes))
 	case c.Expect.Code != "" && v.Got.Code != c.Expect.Code:
 		msg := fmt.Sprintf("code %q, vector names %q", v.Got.Code, c.Expect.Code)
 		if c.Expect.CodeInformative {
@@ -173,3 +183,31 @@ func rel(root, path string) string {
 }
 
 func stem(path string) string { return strings.TrimSuffix(filepath.Base(path), ".json") }
+
+// Registry holds every verifier's rules, so the mutation check can delete any one.
+type Registry struct {
+	Record []record.Rule
+	Chain  []chain.Rule
+}
+
+// Default is the registry the verifiers ship with.
+func Default() Registry { return Registry{Record: record.Rules, Chain: chain.Rules} }
+
+// Observed is what a verifier reported for one case.
+type Observed struct {
+	Outcome string
+	Code    string   // the code that decided the outcome, if any
+	Codes   []string // every code reported, for verifiers that report several
+	Record  *record.Result
+}
+
+func fromRecord(r record.Result) Observed {
+	return Observed{Outcome: string(r.Outcome), Code: r.Code, Record: &r}
+}
+
+func sameSet(a, b []string) bool {
+	a, b = slices.Clone(a), slices.Clone(b)
+	slices.Sort(a)
+	slices.Sort(b)
+	return slices.Equal(a, b)
+}
