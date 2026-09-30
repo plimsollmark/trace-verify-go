@@ -109,7 +109,14 @@ func VerifyGapWith(rules []GapRule, disclosure []byte, ctx GapContext) GapResult
 	// element, signature included: 3.3.4 says only "computed the same way as on a
 	// receipt", and every sealed vector's successor names this value. Decided by the
 	// vectors.
-	s.digest, _ = digest(s.d)
+	d, err := digest(s.d)
+	if err != nil {
+		// Spec 3.2.2: an object whose digest is taken over its canonical form must not
+		// carry an integer outside the safe range.
+		res.Status, res.Failures, res.Warnings = Invalid, []string{"disclosure_malformed"}, []string{}
+		return res
+	}
+	s.digest = d
 	for _, r := range rules {
 		r.Check(s)
 	}
@@ -170,7 +177,7 @@ var GapRules = []GapRule{
 				s.fail("disclosure_signature_invalid")
 				return
 			}
-			msg, err := jcs.Encode(s.d.Without("signature"))
+			msg, err := jcs.EncodeTRACE(s.d.Without("signature"))
 			if err != nil || s.key.Verify(msg, sig) != nil {
 				s.fail("disclosure_signature_invalid")
 			}

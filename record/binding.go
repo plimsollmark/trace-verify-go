@@ -41,7 +41,7 @@ func CheckBinding(rec *jcs.Object) (*jwk.Key, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%w: signature is not base64url without padding", ErrBadSignature)
 	}
-	pre, err := jcs.Encode(rec.Without("signature"))
+	pre, err := jcs.EncodeTRACE(rec.Without("signature"))
 	if err != nil {
 		return nil, err
 	}

@@ -132,7 +132,7 @@ var Rules = []Rule{
 			// that range, and one that does MUST be rejected." Every double of magnitude
 			// 2^53 or more is an integer, and every literal whose double is below 2^53 is
 			// either not an integer or inside the range, so the double decides it.
-			if path, n, bad := outOfRange(s.rec, "$"); bad {
+			if path, n, bad := jcs.OutOfRange(s.rec, "$"); bad {
 				return failf("integer_out_of_range", "%s is %s, outside -(2^53-1) to 2^53-1", path, n.Literal)
 			}
 			return pass()
@@ -656,33 +656,6 @@ func digestOf(declared string, b []byte) (string, error) {
 	return "", fmt.Errorf("declared digest %q names no supported algorithm", declared)
 }
 
-const maxSafe = 1<<53 - 1
-
-func outOfRange(v any, path string) (string, jcs.Number, bool) {
-	switch v := v.(type) {
-	case jcs.Number:
-		if math.Abs(v.Float) > maxSafe {
-			return path, v, true
-		}
-	case []any:
-		for i, e := range v {
-			if p, n, bad := outOfRange(e, fmt.Sprintf("%s[%d]", path, i)); bad {
-				return p, n, true
-			}
-		}
-	case *jcs.Object:
-		if v == nil {
-			break
-		}
-		for _, m := range v.Members {
-			if p, n, bad := outOfRange(m.Value, path+"."+m.Name); bad {
-				return p, n, true
-			}
-		}
-	}
-	return "", jcs.Number{}, false
-}
-
 // integer reads a member that must be a JSON integer (a number with no fractional part).
 func integer(o *jcs.Object, name string) (int64, error) {
 	v, ok := o.Get(name)
@@ -690,7 +663,7 @@ func integer(o *jcs.Object, name string) (int64, error) {
 		return 0, fmt.Errorf("%s is absent", name)
 	}
 	n, isNum := v.(jcs.Number)
-	if !isNum || n.Float != math.Trunc(n.Float) || math.Abs(n.Float) > maxSafe {
+	if !isNum || n.Float != math.Trunc(n.Float) || math.Abs(n.Float) > jcs.MaxSafeInteger {
 		return 0, fmt.Errorf("%s is not an integer in the safe range", name)
 	}
 	return int64(n.Float), nil

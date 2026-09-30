@@ -365,3 +365,16 @@ func TestSignatureWithALineBreakIsMalformed(t *testing.T) {
 		t.Fatalf("got %s %s", res.Outcome, res.Code)
 	}
 }
+
+// CheckBinding, which the delegation chain uses, applies the integer rule itself: a
+// record altered from 2^53 to 2^53+1 must not keep its signature.
+func TestCheckBindingRefusesUnsafeIntegers(t *testing.T) {
+	b := build(t, func(r map[string]any) { r["extra"] = json.Number("9007199254740992") })
+	v, err := jcs.Parse(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := CheckBinding(v.(*jcs.Object)); !errors.Is(err, jcs.ErrUnsafeInteger) {
+		t.Fatalf("got %v", err)
+	}
+}

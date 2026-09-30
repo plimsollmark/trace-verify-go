@@ -248,7 +248,7 @@ var Rules = []Rule{
 				s.fail("signature_or_key_mismatch")
 				return
 			}
-			msg, err := jcs.Encode(s.receipt.Without("signature"))
+			msg, err := jcs.EncodeTRACE(s.receipt.Without("signature"))
 			if err != nil || s.key.Verify(msg, sig) != nil {
 				s.fail("signature_or_key_mismatch")
 			}
@@ -338,9 +338,10 @@ func issuedAt(s *state) (time.Time, bool) {
 	return t, true
 }
 
-// digest is "sha256:" and the lowercase hex SHA-256 of v's RFC 8785 form.
+// digest is "sha256:" and the lowercase hex SHA-256 of v's RFC 8785 form, under
+// TRACE's integer rule (spec 3.2.2 covers "tool-call digests" by name).
 func digest(v any) (string, error) {
-	b, err := jcs.Encode(v)
+	b, err := jcs.EncodeTRACE(v)
 	if err != nil {
 		return "", err
 	}

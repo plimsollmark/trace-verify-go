@@ -170,7 +170,7 @@ func VerifyWith(rules []Rule, records [][]byte, ctx Context) Result {
 // Digest is a record's link digest (spec 3.1.3): alg + ":" + hex of the digest of the
 // RFC 8785 form of the complete record, signature included.
 func Digest(alg string, rec *jcs.Object) (string, error) {
-	b, err := jcs.Encode(rec)
+	b, err := jcs.EncodeTRACE(rec)
 	if err != nil {
 		return "", err
 	}

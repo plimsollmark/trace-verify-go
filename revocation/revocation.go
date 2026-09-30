@@ -200,7 +200,7 @@ var Rules = []Rule{
 			if err != nil {
 				return bad()
 			}
-			pre, err := jcs.Encode(s.bundle.Without("sig"))
+			pre, err := jcs.EncodeTRACE(s.bundle.Without("sig"))
 			if err != nil || k.Verify(pre, sig) != nil {
 				return bad()
 			}
