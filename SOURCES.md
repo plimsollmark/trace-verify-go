@@ -95,6 +95,8 @@ No Python in this repository (`src/trace_verify/`, `tools/`, `tests/`) was read.
 | Repository and file | Date | Why |
 |---|---|---|
 | trace-spec at `152c843`: a search of its `*.md`, `*.json` and `*.yaml` files for Agent Action Capsule terms (matching lines only), and the file list of `docs/crosswalks/` | 2026-09-30 | whether TRACE carries an AAC crosswalk (it did not) |
+| trace-tests at `v0.6.1` and `7d220ee` (main): a search of `docs/**/*.md` and `README.md` for check IDs (`TR-XXX-NNN`, unique IDs only), and the `TR-SIG-001` and `TR-SIG-002` rows of `docs/modules/tr-sig.md` and `docs/error-codes.md` (both already listed above at `v0.6.1`) | 2026-10-01 | a maintainer's count of 27 named checks against finding 8's 25 |
+| trace-spec at `7b96e00` (main): a search of every `*.md`, `*.yaml`, `*.yml`, `*.json` and `*.py` file for check IDs, which printed only the 7 unique IDs and then the names of the 7 files holding them (one of them `src/agentrust_trace/citation.py`); no line of any Python file was printed or read | 2026-10-01 | whether the spec repository defines more named checks than the suite (it does not) |
 | agent-action-capsule at `eabc4ad` (not a TRACE repository): `docs/interop/aac-trace-digest-agreement.md`, the three fixture files vendored under `testdata/interop/aac/`, `LICENSE`, `LICENSING.md`, `NOTICE` | 2026-09-30 | the digest-agreement fixture `jcs/interop_test.go` checks; its license |
 
 No Python from agent-action-capsule (`python/`, including the fixture's own check) was read.
