@@ -142,8 +142,12 @@ They fall into four kinds:
 8. **The portable vectors distinguish few of the suite's named checks.** Weakening one
    check at a time in this verifier (keeping what it sets up for later checks, turning
    anything it reports as a failure into a pass) changes some vector's verdict for only
-   `TR-ENV-001`, `TR-SIG-005`, `TR-POL-003` and `TR-APR-002` (plus the spec-level rules).
-   The other twenty-one are all implemented here. Ten are level 1 or level 2 checks, and
+   `TR-ENV-001`, `TR-SIG-005`, `TR-POL-003` and `TR-APR-002` (plus the spec-level rules),
+   of the 25 named checks that apply to a plain TRACE record. The suite names 27: the other
+   two, `TR-SIG-001` and `TR-SIG-002`, apply only to cMCP envelopes, which this verifier
+   does not implement (finding 6). The count is the rule table of
+   `docs/conformance.html`, which `go run ./cmd/trace-conformance` regenerates; rerun on
+   2026-10-01, it gives the same four. The other twenty-one are all implemented here. Ten are level 1 or level 2 checks, and
    no vector carries an expected result above level 0, although the suite's own records
    carry some of their defects (`invalid_missing_runtime` fails `TR-RTE-001` and
    `TR-RTE-002` at level 1). The other eleven are level 0 checks that schema validation
